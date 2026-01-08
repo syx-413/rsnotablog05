@@ -228,10 +228,30 @@ async fn get_page_html(client: &Client, page_id: &str) -> Result<(String, String
 #[tokio::main]
 async fn main() -> Result<()> {
     // 1. 加载配置
-    let config_path = "../notablog05/test-blog/config.json";
-    let config = Config::load(config_path)?;
-    let client = Client::new(&config.notion_token);
-    let data_source_id = config.get_notion_id()?;
+    let config_path = "config.json"; // 改为当前目录下的 config.json 或通过环境变量
+    
+    let (notion_token, data_source_url, site_title) = if let Ok(config) = Config::load(config_path) {
+        println!(">>> 已加载配置文件: {}", config_path);
+        (config.notion_token, config.url, config.title.unwrap_or_else(|| "My Blog".to_string()))
+    } else {
+        println!(">>> 未找到配置文件或解析失败，尝试从环境变量读取...");
+        let token = std::env::var("NOTION_TOKEN").context("环境变量 NOTION_TOKEN 未设置")?;
+        let url = std::env::var("NOTION_PAGE_URL").context("环境变量 NOTION_PAGE_URL 未设置")?;
+        let title = std::env::var("SITE_TITLE").unwrap_or_else(|_| "My Blog".to_string());
+        (token, url, title)
+    };
+
+    let client = Client::new(&notion_token);
+    
+    // 构造一个临时的 Config 来获取 Notion ID
+    let temp_config = Config {
+        url: data_source_url,
+        notion_token: notion_token.clone(),
+        theme: "".to_string(),
+        title: Some(site_title.clone()),
+        description: None,
+    };
+    let data_source_id = temp_config.get_notion_id()?;
 
     // 2. 初始化 Tera 模板引擎
     let mut tera = tera::Tera::new("templates/**/*")?;
@@ -296,7 +316,7 @@ async fn main() -> Result<()> {
     }
 
     let site_meta = SiteMeta {
-        title: config.title.clone().unwrap_or_else(|| "My Blog".to_string()),
+        title: site_title,
         icon_url: None,
         pages: all_posts.iter().map(|(_, m)| m.clone()).collect(),
     };

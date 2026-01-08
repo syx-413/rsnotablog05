@@ -8,23 +8,28 @@ on:
   schedule:
     - cron: "0 6 * * 1" # update cron time
   workflow_dispatch:
+
 env:
   CARGO_TERM_COLOR: always
+  NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+  NOTION_PAGE_URL: ${{ secrets.NOTION_PAGE_URL }}
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v4
-    - name: Build
-      run: cargo build --verbose
-    - name: Deploy to GitHub Pages  # 这是一个步骤
-            uses: JamesIves/github-pages-deploy-action@v4 # 这里的缩进是错的
-          with: # 这里的缩进是错的
-              token: ${{ secrets.ACCESS_TOKEN }}
-            repository-name: syx-413/syx-413.github.io # 这里的缩进是错的
-            branch: main  # 这里的缩进是错的
-            FOLDER: public  # 这里的缩进是错的
 
+    - name: Build and Generate Site
+      run: |
+        cargo build --verbose
+        cargo run --verbose
+
+    - name: Deploy to GitHub Pages
+      uses: JamesIves/github-pages-deploy-action@v4
+      with:
+        token: ${{ secrets.ACCESS_TOKEN }}
+        repository-name: syx-413/syx-413.github.io
+        branch: main
+        folder: public
