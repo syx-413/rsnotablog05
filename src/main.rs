@@ -31,17 +31,23 @@ impl Config {
 
     /// 从 URL 中提取 Notion ID (32位十六进制字符串)
     fn get_notion_id(&self) -> Result<String> {
-        let parts: Vec<&str> = self.url.split('/').collect();
-        let last_part = parts.last().ok_or_else(|| anyhow::anyhow!("无效的 URL"))?;
+        let url = self.url.trim();
+        let parts: Vec<&str> = url.split('/').collect();
+        let last_part = parts.last().ok_or_else(|| anyhow::anyhow!("无效的 URL: '{}'", url))?;
         
         // 处理带查询参数的 URL (例如 ?v=...)
-        let id_part = last_part.split('?').next().unwrap();
+        let id_part = last_part.split('?').next().unwrap_or(last_part);
         
         // Notion ID 应该是 32 位字符
-        if id_part.len() >= 32 {
-            Ok(id_part.to_string())
+        // 有些 URL 可能是 .../Some-Title-1234567890abcdef1234567890abcdef
+        // 这种情况下我们需要提取最后 32 位
+        let clean_id = id_part.replace("-", ""); 
+        
+        if clean_id.len() >= 32 {
+            // 取最后 32 位
+            Ok(clean_id[clean_id.len()-32..].to_string())
         } else {
-            Err(anyhow::anyhow!("无法从 URL 提取有效的 Notion ID"))
+            Err(anyhow::anyhow!("无法从 URL ('{}') 中提取有效的 Notion ID. 解析到的 ID 部分: '{}'", url, id_part))
         }
     }
 }
