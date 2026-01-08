@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  {% include "partials/head.html" %}
+  <title>
+    {{ siteMeta.title }}
+  </title>
+  <meta property="og:type" content="blog">
+  <meta property="og:title" content="{{ siteMeta.title }}">
+</head>
+
+<body>
+  {% include "partials/navbar.html" %}
+  <header class="Header">
+    <div class="Header__Spacer Header__Spacer--NoCover">
+    </div>
+    <h1 class="Header__Title">
+      {{ siteMeta.title }}
+    </h1>
+  </header>
+  
+  {% include "partials/articleList.html" %}
+
+  {% include "partials/footer.html" %}
+</body>
+
+</html>

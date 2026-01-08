@@ -1,0 +1,31 @@
+<nav class="Navbar">
+  <a href="{{ rootPath | default(value='.') }}/index.html">
+    <div class="Navbar__Btn">
+      {% if siteMeta.iconUrl %}
+        {% if siteMeta.iconUrl is starting_with("http") or siteMeta.iconUrl is starting_with("data:") %}
+          <span><img class="inline-img-icon" src="{{ siteMeta.iconUrl }}"></span>&nbsp;
+        {% else %}
+          <span class="inline-img-icon">{{ siteMeta.iconUrl }}</span>&nbsp;
+        {% endif %}
+      {% endif %}
+      <span>Home</span>
+    </div>
+  </a>
+  {% for page in siteMeta.pages %}
+  {% if page.publish and page.inMenu %}
+  <span class="Navbar__Delim">&centerdot;</span>
+  <a href="{{ rootPath | default(value='.') }}/{{ page.url }}">
+    <div class="Navbar__Btn">
+      {% if page.iconUrl %}
+        {% if page.iconUrl is starting_with("http") or page.iconUrl is starting_with("data:") %}
+          <span><img class="inline-img-icon" src="{{ page.iconUrl }}"></span>&nbsp;
+        {% else %}
+          <span class="inline-img-icon">{{ page.iconUrl }}</span>&nbsp;
+        {% endif %}
+      {% endif %}
+      <span>{{ page.title }}</span>
+    </div>
+  </a>
+  {% endif %}
+  {% endfor %}
+</nav>

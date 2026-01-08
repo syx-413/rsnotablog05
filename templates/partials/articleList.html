@@ -1,0 +1,35 @@
+<article class="ArticleList">
+  {% for page in pages %}
+  <article class="Article">
+    <h3 class="Article__Title">
+      {% if page.icon_url %}
+        {% if page.icon_url is starting_with("http") %}
+          <span><img class="inline-img-icon" src="{{ page.icon_url }}"></span>
+        {% else %}
+          <span class="inline-img-icon">{{ page.icon_url }}</span>
+        {% endif %}
+      {% endif %}
+      <a href="{{ rootPath | default(value='.') }}/{{ page.url }}">
+        {{ page.title }}
+      </a>
+    </h3>
+    {% if page.preview %}
+    <p class="Article__Desc">
+      {{ page.preview }}
+    </p>
+    {% endif %}
+    <div class="DateTagBar">
+      {% if page.date %}
+      <span class="DateTagBar__Item DateTagBar__Date">Posted on {{ page.date }}</span>
+      {% endif %}
+      {% for tag in page.tags %}
+      <span class="DateTagBar__Item DateTagBar__Tag">
+        <a href="{{ rootPath | default(value='.') }}/tag/{{ tag.slug }}.html" class="tag tag-{{ tag.color | default(value='default') }}">
+          {{ tag.name }}
+        </a>
+      </span>
+      {% endfor %}
+    </div>
+  </article>
+  {% endfor %}
+</article>
