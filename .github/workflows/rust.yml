@@ -32,5 +32,5 @@ jobs:
       with:
         token: ${{ secrets.ACCESS_TOKEN }}
         repository-name: syx-413/syx-413.github.io
-        branch: main
+        branch: gh-pages  # 改为使用 gh-pages 分支，避免与 main 冲突
         folder: public
