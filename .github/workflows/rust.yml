@@ -12,7 +12,8 @@ on:
 env:
   CARGO_TERM_COLOR: always
   NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
-  NOTION_PAGE_URL: ${{ secrets.NOTION_PAGE_URL }}
+  DATABASE_ID: ${{ secrets.DATABASE_ID }}
+  # NOTION_PAGE_URL: ${{ secrets.NOTION_PAGE_URL }}
 
 jobs:
   build:
