@@ -114,24 +114,24 @@ async fn get_correct_id(client: &Client, database_id: &str) -> Result<String> {
     // 使用 retrieve_database 方法获取数据库信息，从中提取数据源 ID
     match client
         .retrieve_database()
-        .database_id(database_id)
+        .database_id(database_id.trim())  // 去除首尾空白字符
         .send()
         .await
     {
         Ok(response) => {
             // 从响应中获取数据源 ID
             if !response.data_sources.is_empty() {
-                // 返回第一个数据源的 ID
-                Ok(response.data_sources[0].id.clone())
+                // 返回第一个数据源的 ID，去除首尾空白字符
+                Ok(response.data_sources[0].id.trim().to_string())
             } else {
                 // 如果没有数据源，返回原始 ID
-                Ok(database_id.to_string())
+                Ok(database_id.trim().to_string())
             }
         }
         Err(_) => {
-            // 如果 retrieve_database 失败，可能是输入的就是数据源 ID
-            // 返回原始 ID，让后续的查询决定是否有效
-            Ok(database_id.to_string())
+            // 如果 retrieve_database 失败，可能是输入的就是数据源 ID 或权限不足
+            // 返回原始 ID，去除首尾空白字符
+            Ok(database_id.trim().to_string())
         }
     }
 }
@@ -237,7 +237,9 @@ async fn main() -> Result<()> {
 
     // 尝试获取数据库信息以确定正确的 ID 类型
     // 自动获取正确的数据源 ID（如果提供的是数据库 ID）
+    // 注意：如果 retrieve_database 调用失败，可能需要直接使用数据源 ID
     let data_source_id = get_correct_id(&client, &database_id).await?;
+    // println!(">>> 使用数据源 ID: {}", data_source_id);
 
     // 2. 初始化 Tera 模板引擎
     let mut tera = tera::Tera::new("templates/**/*")?;
