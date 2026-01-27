@@ -9,49 +9,6 @@ use std::fs;
 use std::path::Path;
 use std::collections::HashMap;
 
-// -----------------------------------------------------------
-// 0. 配置结构
-// -----------------------------------------------------------
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct Config {
-    url: String,
-    notion_token: String,
-    theme: String,
-    title: Option<String>,
-    description: Option<String>,
-}
-
-impl Config {
-    fn load<P: AsRef<Path>>(path: P) -> Result<Self> {
-        let content = fs::read_to_string(path).context("无法读取配置文件")?;
-        let config: Config = serde_json::from_str(&content).context("解析配置文件失败")?;
-        Ok(config)
-    }
-
-    /// 从 URL 中提取 Notion ID (32位十六进制字符串)
-    fn get_notion_id(&self) -> Result<String> {
-        let url = self.url.trim();
-        let parts: Vec<&str> = url.split('/').collect();
-        let last_part = parts.last().ok_or_else(|| anyhow::anyhow!("无效的 URL: '{}'", url))?;
-        
-        // 处理带查询参数的 URL (例如 ?v=...)
-        let id_part = last_part.split('?').next().unwrap_or(last_part);
-        
-        // Notion ID 应该是 32 位字符
-        // 有些 URL 可能是 .../Some-Title-1234567890abcdef1234567890abcdef
-        // 这种情况下我们需要提取最后 32 位
-        let clean_id = id_part.replace("-", ""); 
-        
-        if clean_id.len() >= 32 {
-            // 取最后 32 位
-            Ok(clean_id[clean_id.len()-32..].to_string())
-        } else {
-            Err(anyhow::anyhow!("无法从 URL ('{}') 中提取有效的 Notion ID. 解析到的 ID 部分: '{}'", url, id_part))
-        }
-    }
-}
-
 /// 递归拷贝目录
 fn copy_dir_recursive(src: &Path, dst: &Path) -> Result<()> {
     if !dst.exists() {
@@ -74,7 +31,7 @@ fn copy_dir_recursive(src: &Path, dst: &Path) -> Result<()> {
 }
 
 // -----------------------------------------------------------
-// 0.5 渲染上下文
+// 渲染上下文
 // -----------------------------------------------------------
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -150,8 +107,39 @@ fn slugify(s: &str) -> String {
         .to_lowercase()
 }
 
+/// 获取正确的 ID - 如果输入的是数据库 ID，则自动转换为数据源 ID
+/// notionrs 库的 query_data_source 方法需要数据源 ID，而不是数据库 ID
+/// 此函数会自动检测并转换
+async fn get_correct_id(client: &Client, database_id: &str) -> Result<String> {
+    // 使用 retrieve_database 方法获取数据库信息，从中提取数据源 ID
+    match client
+        .retrieve_database()
+        .database_id(database_id)
+        .send()
+        .await
+    {
+        Ok(response) => {
+            // 从响应中获取数据源 ID
+            if !response.data_sources.is_empty() {
+                // 返回第一个数据源的 ID
+                Ok(response.data_sources[0].id.clone())
+            } else {
+                // 如果没有数据源，返回原始 ID
+                Ok(database_id.to_string())
+            }
+        }
+        Err(_) => {
+            // 如果 retrieve_database 失败，可能是输入的就是数据源 ID
+            // 返回原始 ID，让后续的查询决定是否有效
+            Ok(database_id.to_string())
+        }
+    }
+}
+
+
+
 // -----------------------------------------------------------
-// 1. 数据结构 (Notion API 响应映射)
+// 数据结构 (Notion API 响应映射)
 // -----------------------------------------------------------
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct MyProperties {
@@ -233,31 +221,23 @@ async fn get_page_html(client: &Client, page_id: &str) -> Result<(String, String
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    // 1. 加载配置
-    let config_path = "config.json"; // 改为当前目录下的 config.json 或通过环境变量
-    
-    let (notion_token, data_source_url, site_title) = if let Ok(config) = Config::load(config_path) {
-        println!(">>> 已加载配置文件: {}", config_path);
-        (config.notion_token, config.url, config.title.unwrap_or_else(|| "My Blog".to_string()))
-    } else {
-        println!(">>> 未找到配置文件或解析失败，尝试从环境变量读取...");
-        let token = std::env::var("NOTION_TOKEN").context("环境变量 NOTION_TOKEN 未设置")?;
-        let url = std::env::var("NOTION_PAGE_URL").context("环境变量 NOTION_PAGE_URL 未设置")?;
-        let title = std::env::var("SITE_TITLE").unwrap_or_else(|_| "My Blog".to_string());
-        (token, url, title)
-    };
+    // 从环境变量读取配置
+    let notion_token = std::env::var("NOTION_TOKEN")
+        .context("未设置 NOTION_TOKEN 环境变量")?;
+    let database_id = std::env::var("DATABASE_ID")
+        .context("未设置 DATABASE_ID 环境变量")?;
+    let site_title = std::env::var("SITE_TITLE")
+        .unwrap_or_else(|_| "My Blog".to_string());
+
+    println!(">>> 配置信息:");
+    println!("    Database ID: {}", database_id);
+    println!("    Site Title: {}", site_title);
 
     let client = Client::new(&notion_token);
-    
-    // 构造一个临时的 Config 来获取 Notion ID
-    let temp_config = Config {
-        url: data_source_url,
-        notion_token: notion_token.clone(),
-        theme: "".to_string(),
-        title: Some(site_title.clone()),
-        description: None,
-    };
-    let data_source_id = temp_config.get_notion_id()?;
+
+    // 尝试获取数据库信息以确定正确的 ID 类型
+    // 自动获取正确的数据源 ID（如果提供的是数据库 ID）
+    let data_source_id = get_correct_id(&client, &database_id).await?;
 
     // 2. 初始化 Tera 模板引擎
     let mut tera = tera::Tera::new("templates/**/*")?;
@@ -292,7 +272,6 @@ async fn main() -> Result<()> {
         let icon_url = match &page.icon {
             Some(Icon::Emoji(emoji)) => Some(emoji.emoji.clone()),
             Some(Icon::File(file_enum)) => match file_enum {
-                // 尝试解构 external 字段
                 File::External(ext_file) => Some(ext_file.external.url.clone()), 
                 _ => None, 
             },
@@ -378,7 +357,7 @@ async fn main() -> Result<()> {
     println!(">>> 正在生成首页...");
     let mut index_context = tera::Context::new();
     index_context.insert("siteMeta", &site_meta);
-    index_context.insert("pages", &posts_meta_for_index); // Changed from "posts" to "pages" to match articleList.html
+    index_context.insert("pages", &posts_meta_for_index);
     index_context.insert("rootPath", ".");
     let index_html = tera.render("index.html", &index_context)?;
     fs::write("public/index.html", index_html)?;
@@ -400,7 +379,6 @@ async fn main() -> Result<()> {
     // 计算标签统计信息
     let mut all_tags: Vec<TagStat> = Vec::new();
     for (tag_name, posts) in &tags_map {
-        // 找到对应的标签颜色
         let color = posts.first()
             .and_then(|p| p.tags.iter().find(|t| t.name == *tag_name))
             .map(|t| t.color.clone())
@@ -413,7 +391,6 @@ async fn main() -> Result<()> {
             color,
         });
     }
-    // 按数量降序排序
     all_tags.sort_by(|a, b| b.count.cmp(&a.count));
 
     // 渲染每个标签的页面
@@ -429,12 +406,11 @@ async fn main() -> Result<()> {
 
         let mut context = tera::Context::new();
         context.insert("siteMeta", &tag_site_meta);
-        context.insert("tagName", &tag_name); // 传入 tagName 供模板使用
+        context.insert("tagName", &tag_name);
         context.insert("pages", &tag_posts);
-        context.insert("allTags", &all_tags); // 传入所有标签列表
+        context.insert("allTags", &all_tags);
         context.insert("rootPath", "..");
         
-        // 优先使用 tag.html，如果没有则回退到 index.html
         let template_name = if tera.get_template_names().any(|t| t == "tag.html") {
             "tag.html"
         } else {
@@ -450,7 +426,6 @@ async fn main() -> Result<()> {
         fs::copy("templates/main.css", "public/main.css")?;
     }
     
-    // 自动拷贝 templates/assets 到 public/assets
     let assets_src = Path::new("templates/assets");
     if assets_src.exists() {
         println!(">>> 正在拷贝静态资源...");
