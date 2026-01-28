@@ -2,11 +2,11 @@
   {% for page in pages %}
   <article class="Article">
     <h3 class="Article__Title">
-      {% if page.icon_url %}
-        {% if page.icon_url is starting_with("http") %}
-          <span><img class="inline-img-icon" src="{{ page.icon_url }}"></span>
+      {% if page.iconUrl %}
+        {% if page.iconUrl is starting_with("http") %}
+          <span><img class="inline-img-icon" src="{{ page.iconUrl }}"></span>
         {% else %}
-          <span class="inline-img-icon">{{ page.icon_url }}</span>
+          <span class="inline-img-icon">{{ page.iconUrl }}</span>
         {% endif %}
       {% endif %}
       <a href="{{ rootPath | default(value='.') }}/{{ page.url }}">

@@ -378,3 +378,12 @@
 .tag-default { color: #5a5a5a; background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.02); }
 
 /* Remove Dark Mode tags for now to avoid 'forced' dark mode issues in light theme */
+
+/* Layout Density Adjustments */
+.Header__Spacer--NoCover {
+    margin-top: 50px !important;
+}
+
+.Header > *:last-child {
+    margin-bottom: 1.5rem !important;
+}
