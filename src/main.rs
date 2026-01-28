@@ -315,6 +315,12 @@ async fn main() -> Result<()> {
     let mut all_posts = Vec::new();
     for page in response.results {
         let p = page.properties;
+        
+        // 如果没有点击 publish，则完全跳过该文章的研究与元数据生成
+        if !p.publish.checkbox {
+            continue;
+        }
+
         let title = p.title.to_string();
         let filename = format!("{}.html", slugify(&title));
         
@@ -372,6 +378,8 @@ async fn main() -> Result<()> {
     // 4. 遍历处理每篇文章
     let mut posts_meta_for_index = Vec::new();
     for (page_id, mut meta) in all_posts {
+        // 由于上面已经通过 if !p.publish.checkbox 过滤了，这里 meta.publish 理论上全是 true
+        // 但保留这个判断也非常安全
         if !meta.publish {
             continue;
         }
