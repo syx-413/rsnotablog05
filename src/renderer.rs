@@ -1,6 +1,5 @@
 use notionrs_types::prelude::*;
 
-
 pub struct HtmlRenderer;
 
 impl HtmlRenderer {
@@ -8,42 +7,61 @@ impl HtmlRenderer {
         match block {
             Block::Paragraph { paragraph } => {
                 let text = Self::render_rich_text(&paragraph.rich_text);
-                let color_class = Self::get_color_class(&paragraph.color);
-                format!("<p class=\"{}\">{}</p>", color_class, text)
+                let color_part = Self::get_color_part(&paragraph.color);
+                let color_class = if color_part.is_empty() { String::new() } else { format!("ColorfulBlock--{}", color_part) };
+                format!("<p class=\"Paragraph {}\">{}</p>", color_class, text)
             }
             Block::Heading1 { heading_1 } => {
                 let text = Self::render_rich_text(&heading_1.rich_text);
-                let color_class = Self::get_color_class(&heading_1.color);
-                format!("<h1 class=\"{}\">{}</h1>", color_class, text)
+                let color_part = Self::get_color_part(&heading_1.color);
+                let color_class = if color_part.is_empty() { String::new() } else { format!("ColorfulBlock--{}", color_part) };
+                format!(
+                    "<h1 class=\"Heading Heading--1 {}\">{}</h1>",
+                    color_class, text
+                )
             }
             Block::Heading2 { heading_2 } => {
                 let text = Self::render_rich_text(&heading_2.rich_text);
-                let color_class = Self::get_color_class(&heading_2.color);
-                format!("<h2 class=\"{}\">{}</h2>", color_class, text)
+                let color_part = Self::get_color_part(&heading_2.color);
+                let color_class = if color_part.is_empty() { String::new() } else { format!("ColorfulBlock--{}", color_part) };
+                format!(
+                    "<h2 class=\"Heading Heading--2 {}\">{}</h2>",
+                    color_class, text
+                )
             }
             Block::Heading3 { heading_3 } => {
                 let text = Self::render_rich_text(&heading_3.rich_text);
-                let color_class = Self::get_color_class(&heading_3.color);
-                format!("<h3 class=\"{}\">{}</h3>", color_class, text)
+                let color_part = Self::get_color_part(&heading_3.color);
+                let color_class = if color_part.is_empty() { String::new() } else { format!("ColorfulBlock--{}", color_part) };
+                format!(
+                    "<h3 class=\"Heading Heading--3 {}\">{}</h3>",
+                    color_class, text
+                )
             }
             Block::BulletedListItem { bulleted_list_item } => {
                 let text = Self::render_rich_text(&bulleted_list_item.rich_text);
-                let color_class = Self::get_color_class(&bulleted_list_item.color);
-                format!("<li class=\"{}\">{}</li>", color_class, text)
+                let color_part = Self::get_color_part(&bulleted_list_item.color);
+                let color_class = if color_part.is_empty() { String::new() } else { format!("ColorfulBlock--{}", color_part) };
+                format!("<li class=\"BulletedList {}\">{}</li>", color_class, text)
             }
             Block::NumberedListItem { numbered_list_item } => {
                 let text = Self::render_rich_text(&numbered_list_item.rich_text);
-                let color_class = Self::get_color_class(&numbered_list_item.color);
-                format!("<li class=\"{}\">{}</li>", color_class, text)
+                let color_part = Self::get_color_part(&numbered_list_item.color);
+                let color_class = if color_part.is_empty() { String::new() } else { format!("ColorfulBlock--{}", color_part) };
+                format!("<li class=\"NumberedList {}\">{}</li>", color_class, text)
             }
             Block::Code { code } => {
                 let text = Self::render_rich_text(&code.rich_text);
-                format!("<pre><code class=\"language-{}\">{}</code></pre>", code.language, text)
+                format!("<pre class=\"Code\"><code>{}</code></pre>", text)
             }
             Block::Quote { quote } => {
                 let text = Self::render_rich_text(&quote.rich_text);
-                let color_class = Self::get_color_class(&quote.color);
-                format!("<blockquote class=\"{}\">{}</blockquote>", color_class, text)
+                let color_part = Self::get_color_part(&quote.color);
+                let color_class = if color_part.is_empty() { String::new() } else { format!("ColorfulBlock--{}", color_part) };
+                format!(
+                    "<blockquote class=\"Quote {}\">{}</blockquote>",
+                    color_class, text
+                )
             }
             Block::Callout { callout } => {
                 let text = Self::render_rich_text(&callout.rich_text);
@@ -51,72 +69,148 @@ impl HtmlRenderer {
                     Some(icon) => icon.to_string(),
                     None => "💡".to_string(),
                 };
-                let color_class = Self::get_color_class(&callout.color);
-                format!("<div class=\"callout {}\"><span style=\"margin-right: 10px;\">{}</span>{}</div>", color_class, emoji, text)
+                let color_part = Self::get_color_part(&callout.color);
+                let color_class = if color_part.is_empty() { String::new() } else { format!("ColorfulBlock--{}", color_part) };
+                format!(
+                    "<div class=\"Callout {}\"><div class=\"Callout__Icon\">{}</div><div class=\"Callout__Content\">{}</div></div>",
+                    color_class, emoji, text
+                )
             }
             Block::Image { image } => {
                 let url = image.to_string();
-                format!("<figure><img src=\"{}\" style=\"max-width: 100%; border-radius: 5px;\" /><figcaption></figcaption></figure>", url)
+                format!(
+                    "<div class=\"Image Image--Normal\"><figure><img src=\"{}\" /><figcaption></figcaption></figure></div>",
+                    url
+                )
             }
             Block::Video { video } => {
                 let url = video.to_string();
-                format!("<div class=\"video-block\"><video controls src=\"{}\" style=\"max-width: 100%; border-radius: 5px;\"></video></div>", url)
+                format!(
+                    "<div class=\"Video\"><div class=\"Video__Content\"><video controls src=\"{}\"></video></div></div>",
+                    url
+                )
             }
             Block::Audio { audio } => {
                 let url = audio.to_string();
-                format!("<div class=\"audio-block\"><audio controls src=\"{}\" style=\"width: 100%; margin: 10px 0;\"></audio></div>", url)
+                format!(
+                    "<div class=\"Audio\"><audio controls src=\"{}\"></audio></div>",
+                    url
+                )
             }
             Block::File { file } => {
                 let url = file.to_string();
-                let name = url.split('/').last().unwrap_or("Download File");
-                format!("<div class=\"file-block\"><a href=\"{}\" target=\"_blank\" class=\"file-link\">📎 {}</a></div>", url, name)
+                // 仅提取文件名，避免暴露包含加密签名的长 URL
+                let name = url.split('?').next().unwrap_or(&url); // 去掉查询参数
+                let name = name.split('/').last().unwrap_or("Download File");
+                format!(
+                    "<div class=\"File\"><a href=\"{}\" target=\"_blank\">📎 {}</a></div>",
+                    url, name
+                )
             }
             Block::Pdf { pdf } => {
                 let url = pdf.to_string();
-                format!("<div class=\"pdf-block\"><embed src=\"{}\" type=\"application/pdf\" width=\"100%\" height=\"500px\" /></div>", url)
+                format!(
+                    "<div class=\"Pdf\"><embed src=\"{}\" type=\"application/pdf\" width=\"100%\" height=\"500px\" /></div>",
+                    url
+                )
             }
             Block::Embed { embed } => {
                 let url = embed.url.clone();
-                // 简单嵌入 iframe，更复杂的需解析 URL (如 Bilibili, YouTube)
-                format!("<div class=\"embed-block\"><iframe src=\"{}\" style=\"width: 100%; height: 400px; border: none;\"></iframe></div>", url)
+                format!(
+                    "<div class=\"Embed\"><div class=\"Embed__ResponsiveContainer\"><iframe src=\"{}\" style=\"border: none;\"></iframe></div></div>",
+                    url
+                )
             }
             Block::Bookmark { bookmark } => {
                 let url = bookmark.url.clone();
-                // 书签样式
+                let caption = Self::render_rich_text(&bookmark.caption);
+                
+                let parts: Vec<&str> = if caption.contains('|') {
+                    caption.splitn(2, '|').collect()
+                } else if caption.contains('\n') {
+                    caption.splitn(2, '\n').collect()
+                } else {
+                    vec![&caption, ""]
+                };
+
+                let mut title = parts[0].trim().to_string();
+                let desc = parts.get(1).map(|s| s.trim()).unwrap_or("");
+                
+                let display_url = url.trim_start_matches("https://").trim_start_matches("http://").trim_end_matches("/");
+                let host = display_url.split('/').next().unwrap_or(display_url);
+
+                // 如果没有标题（caption 为空），直接显示原始 URL
+                if title.is_empty() {
+                    title = url.clone();
+                }
+                
+                let icon_url = format!("https://www.google.com/s2/favicons?domain={}&sz=64", host);
+
+                let desc_html = if !desc.is_empty() {
+                    format!("<div class=\"Bookmark__Desc\">{}</div>", desc)
+                } else {
+                    "".to_string()
+                };
+
                 format!(
-                    "<a href=\"{}\" class=\"bookmark\" target=\"_blank\" style=\"display: block; border: 1px solid #ddd; padding: 12px; border-radius: 4px; margin: 10px 0; text-decoration: none; color: inherit;\">
-                        <div style=\"font-weight: bold;\">{}</div>
-                        <div style=\"font-size: 0.9em; color: #666; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;\">{}</div>
-                    </a>",
-                    url, url, url
+                    "<div class=\"Bookmark\"><a href=\"{}\" target=\"_blank\">
+                        <div class=\"Bookmark__Content\">
+                            <div class=\"Bookmark__Title\">{}</div>
+                            {}
+                            <div class=\"Bookmark__Meta\">
+                                <img class=\"Bookmark__Icon\" src=\"{}\" />
+                                <span class=\"Bookmark__Link\">{}</span>
+                            </div>
+                        </div>
+                    </a></div>",
+                    url, title, desc_html, icon_url, display_url
                 )
             }
             Block::Toggle { toggle } => {
                 let text = Self::render_rich_text(&toggle.rich_text);
-                // 注意：Toggle 的子内容会在 main.rs 的递归中处理，但这里我们无法直接包裹子内容
-                // 因为 main.rs 的逻辑是平铺渲染。
-                // *重要*：目前的 main.rs 逻辑对于 Toggle 这种容器类 Block 支持不够完美（它只是简单的平铺）。
-                // 为了完美支持 Toggle，需要在 main.rs 中特殊处理容器 Block 的闭合标签。
-                // 但作为 renderer 的一部分，我们至少可以渲染 summary。
-                format!("<details><summary>{}</summary></details>", text)
+                format!(
+                    "<details class=\"Toggle\"><summary class=\"Toggle__Summary\">{}</summary>",
+                    text
+                )
             }
             Block::ToDo { to_do } => {
                 let text = Self::render_rich_text(&to_do.rich_text);
                 let checked = if to_do.checked { "checked" } else { "" };
-                let style = if to_do.checked { "text-decoration: line-through; opacity: 0.7;" } else { "" };
+                let checked_class = if to_do.checked { "todo-checked" } else { "" };
                 format!(
-                    "<div class=\"todo-item\" style=\"display: flex; align-items: center; margin: 4px 0;\">
-                        <input type=\"checkbox\" {} disabled style=\"margin-right: 8px;\">
-                        <span style=\"{}\">{}</span>
+                    "<div class=\"todo-item\">
+                        <input type=\"checkbox\" class=\"todo-checkbox\" {} disabled>
+                        <span class=\"{}\">{}</span>
                     </div>",
-                    checked, style, text
+                    checked, checked_class, text
                 )
             }
             Block::Equation { equation } => {
-                format!("<div class=\"equation-block\">{}</div>", equation.expression)
+                format!(
+                    "<div class=\"Equation\"><div class=\"equation-block\">{}</div></div>",
+                    equation.expression
+                )
             }
-            Block::Divider { .. } => "<hr style=\"border: none; border-top: 1px solid #eaeaea; margin: 2em 0;\" />".to_string(),
-            _ => format!("<!-- Unsupported block type -->"),
+            Block::Divider { .. } => "<div class=\"Divider\"></div>".to_string(),
+            Block::ColumnList { .. } => "<div class=\"ColumnList\">".to_string(), // 容器开始
+            Block::Column { .. } => "<div class=\"Column\" style=\"flex: 1; min-width: 0;\">".to_string(), // 容器开始
+            Block::Table { table } => {
+                format!(
+                    "<div class=\"Table\"><table style=\"width: {}px\">",
+                    table.table_width as i32
+                )
+            }
+            Block::TableRow { table_row } => {
+                let mut row_html = String::from("<tr>");
+                for cell_rich_text in &table_row.cells {
+                    row_html.push_str("<td>");
+                    row_html.push_str(&Self::render_rich_text(cell_rich_text));
+                    row_html.push_str("</td>");
+                }
+                row_html.push_str("</tr>");
+                row_html
+            }
+            _ => format!("<!-- Unsupported block type: {:?} -->", block),
         }
     }
 
@@ -124,9 +218,11 @@ impl HtmlRenderer {
         let mut html = String::new();
         for rt in rich_texts {
             match rt {
-                RichText::Text { text, annotations, .. } => {
+                RichText::Text {
+                    text, annotations, ..
+                } => {
                     let mut content = text.content.clone();
-                    
+
                     if annotations.bold {
                         content = format!("<strong>{}</strong>", content);
                     }
@@ -142,17 +238,21 @@ impl HtmlRenderer {
                     if annotations.code {
                         content = format!("<code>{}</code>", content);
                     }
-                    
+
                     // Handle Color
-                    let color_class = Self::get_color_class(&annotations.color);
-                    if !color_class.is_empty() {
+                    let color_part = Self::get_color_part(&annotations.color);
+                    if !color_part.is_empty() {
+                        let color_class = format!("SemanticString__Fragment--{}", color_part);
                         content = format!("<span class=\"{}\">{}</span>", color_class, content);
                     }
 
                     html.push_str(&content);
                 }
                 RichText::Equation { equation, .. } => {
-                    html.push_str(&format!("<span class=\"equation-inline\">{}</span>", equation.expression));
+                    html.push_str(&format!(
+                        "<span class=\"equation-inline\">{}</span>",
+                        equation.expression
+                    ));
                 }
                 _ => {} // Handle mentions if needed
             }
@@ -160,16 +260,30 @@ impl HtmlRenderer {
         html
     }
 
-    fn get_color_class(color: &Color) -> String {
-        let color_str = format!("{:?}", color).to_lowercase();
-        if color_str == "default" {
+    fn get_color_part(color: &Color) -> String {
+        let mut color_str = format!("{:?}", color);
+
+        // 如果是 Option 包装（通常是因为 Debug 格式显示 Some(Red)）
+        if color_str.starts_with("Some(") {
+            color_str = color_str
+                .strip_prefix("Some(")
+                .unwrap()
+                .strip_suffix(")")
+                .unwrap()
+                .to_string();
+        }
+
+        if color_str == "Default" {
             return String::new();
         }
-        
-        if color_str.ends_with("background") {
-            format!("bg-{}", color_str.replace("background", ""))
+
+        // Notion variants are PascalCase in notionrs: Red, RedBackground, etc.
+        // theme.css expects: ColorRed, BgRed
+        if color_str.ends_with("Background") {
+            let base = color_str.strip_suffix("Background").unwrap();
+            format!("Bg{}", base)
         } else {
-            format!("color-{}", color_str)
+            format!("Color{}", color_str)
         }
     }
 }

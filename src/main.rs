@@ -175,46 +175,102 @@ async fn get_page_html(client: &Client, page_id: &str) -> Result<(String, String
         .await
         .map_err(|e| anyhow::anyhow!(e))?;
 
-    for block_res in response.results {
-        let block_html = HtmlRenderer::render_block(&block_res.block);
-        
-        // 特殊处理 Toggle：我们需要把子内容放进 details 标签内部
-        if let Block::Toggle { .. } = &block_res.block {
-             // 移除末尾的 </details>
-             let open_tag = block_html.strip_suffix("</details>").unwrap_or(&block_html);
-             html.push_str(open_tag);
-             
-             if block_res.has_children {
-                 let (children_html, children_text) = Box::pin(get_page_html(client, &block_res.id)).await?;
-                 html.push_str("<div class=\"details-content\" style=\"padding-left: 1.2em;\">");
-                 html.push_str(&children_html);
-                 html.push_str("</div>");
-                 if plain_text.len() < 200 {
-                    plain_text.push_str(&children_text);
-                 }
-             }
-             html.push_str("</details>");
-        } else {
-            // 普通 Block
-            html.push_str(&block_html);
-            html.push('\n');
-            
-            // 提取纯文本用于预览
-            if plain_text.len() < 200 {
-                plain_text.push_str(&block_res.block.to_string());
-                plain_text.push(' ');
+    let mut list_stack: Vec<&str> = Vec::new();
+
+    let mut i = 0;
+    while i < response.results.len() {
+        let block_res = &response.results[i];
+        let block = &block_res.block;
+
+        // 处理列表分组
+        let current_list_type = match block {
+            Block::BulletedListItem { .. } => Some("ul"),
+            Block::NumberedListItem { .. } => Some("ol"),
+            _ => None,
+        };
+
+        match (list_stack.last().cloned(), current_list_type) {
+            (Some(last), Some(current)) if last == current => {
+                // 继续同类型列表
             }
-            
-            if block_res.has_children {
-                let (children_html, children_text) = Box::pin(get_page_html(client, &block_res.id)).await?;
-                html.push_str("<div style=\"margin-left: 20px;\">");
-                html.push_str(&children_html);
-                html.push_str("</div>");
+            (Some(last), _) => {
+                // 关闭之前的列表
+                html.push_str(&format!("</{}>\n", last));
+                list_stack.pop();
+                // 如果当前也是列表，则开启新列表
+                if let Some(current) = current_list_type {
+                    let wrapper_class = if current == "ul" { "BulletedListWrapper" } else { "NumberedListWrapper" };
+                    html.push_str(&format!("<{} class=\"{}\">\n", current, wrapper_class));
+                    list_stack.push(current);
+                }
+            }
+            (None, Some(current)) => {
+                // 开启新列表
+                let wrapper_class = if current == "ul" { "BulletedListWrapper" } else { "NumberedListWrapper" };
+                html.push_str(&format!("<{} class=\"{}\">\n", current, wrapper_class));
+                list_stack.push(current);
+            }
+            (None, None) => {}
+        }
+
+        let block_html = HtmlRenderer::render_block(block);
+
+        // 处理容器类 Block (Toggle, ColumnList, Column, Table)
+        match block {
+            Block::Toggle { .. } | Block::ColumnList { .. } | Block::Column { .. } | Block::Table { .. } => {
+                html.push_str(&block_html);
+                if block_res.has_children {
+                    // 对于 Toggle，开启内容包装层
+                    if let Block::Toggle { .. } = block {
+                        html.push_str("<div class=\"Toggle__Content\">\n");
+                    }
+                    
+                    let (children_html, children_text) = Box::pin(get_page_html(client, &block_res.id)).await?;
+                    html.push_str(&children_html);
+                    
+                    if let Block::Toggle { .. } = block {
+                        html.push_str("</div>\n");
+                    }
+                    
+                    if plain_text.len() < 200 {
+                        plain_text.push_str(&children_text);
+                    }
+                }
+                match block {
+                    Block::Toggle { .. } => html.push_str("</details>\n"),
+                    Block::ColumnList { .. } => html.push_str("</div>\n"),
+                    Block::Column { .. } => html.push_str("</div>\n"),
+                    Block::Table { .. } => html.push_str("</table></div>\n"),
+                    _ => {}
+                }
+            }
+            _ => {
+                html.push_str(&block_html);
+                html.push('\n');
+
                 if plain_text.len() < 200 {
-                    plain_text.push_str(&children_text);
+                    plain_text.push_str(&block.to_string());
+                    plain_text.push(' ');
+                }
+
+                if block_res.has_children {
+                    let (children_html, children_text) = Box::pin(get_page_html(client, &block_res.id)).await?;
+                    // 对于普通的有子节点的 block，保持缩进
+                    html.push_str("<div style=\"margin-left: 20px;\">");
+                    html.push_str(&children_html);
+                    html.push_str("</div>\n");
+                    if plain_text.len() < 200 {
+                        plain_text.push_str(&children_text);
+                    }
                 }
             }
         }
+        i += 1;
+    }
+
+    // 闭合可能存在的列表
+    if let Some(last) = list_stack.pop() {
+        html.push_str(&format!("</{}>\n", last));
     }
     Ok((html, plain_text))
 }
@@ -242,7 +298,7 @@ async fn main() -> Result<()> {
     // println!(">>> 使用数据源 ID: {}", data_source_id);
 
     // 2. 初始化 Tera 模板引擎
-    let mut tera = tera::Tera::new("templates/**/*")?;
+    let mut tera = tera::Tera::new("templates/**/*.html")?;
     tera.full_reload()?;
 
     // 3. 获取所有文章元数据
@@ -260,10 +316,7 @@ async fn main() -> Result<()> {
     for page in response.results {
         let p = page.properties;
         let title = p.title.to_string();
-        let safe_title = title.replace(" ", "_").replace("/", "-")
-            .replace("?", "").replace(":", "").replace("*", "").replace("\"", "")
-            .replace("<", "").replace(">", "").replace("|", "");
-        let filename = format!("{}.html", safe_title);
+        let filename = format!("{}.html", slugify(&title));
         
         let date_str = p.date.date.as_ref()
             .and_then(|d| d.start.as_ref())
@@ -288,10 +341,16 @@ async fn main() -> Result<()> {
             title,
             url: filename,
             date: date_str,
-            tags: p.tags.multi_select.iter().map(|opt| Tag { 
-                name: opt.name.clone(), 
-                color: format!("{:?}", opt.color).to_lowercase(),
-                slug: slugify(&opt.name)
+            tags: p.tags.multi_select.iter().map(|opt| {
+                let mut color = format!("{:?}", opt.color).to_lowercase();
+                if color.starts_with("some(") {
+                    color = color.strip_prefix("some(").unwrap().strip_suffix(")").unwrap().to_string();
+                }
+                Tag { 
+                    name: opt.name.clone(), 
+                    color,
+                    slug: slugify(&opt.name)
+                }
             }).collect(),
             preview: "".to_string(), // 稍后填充
             publish: p.publish.checkbox,
@@ -428,11 +487,14 @@ async fn main() -> Result<()> {
         fs::copy("templates/main.css", "public/main.css")?;
     }
     
-    let assets_src = Path::new("templates/assets");
-    if assets_src.exists() {
-        println!(">>> 正在拷贝静态资源...");
-        let assets_dst = Path::new("public/assets");
-        copy_dir_recursive(assets_src, assets_dst)?;
+    let assets_dirs = ["assets", "css", "fonts"];
+    for dir in assets_dirs {
+        let src = Path::new("templates").join(dir);
+        if src.exists() {
+            println!(">>> 正在拷贝静态资源: {}...", dir);
+            let dst = Path::new("public").join(dir);
+            copy_dir_recursive(&src, &dst)?;
+        }
     }
 
     println!(">>> 全部完成！请查看 public/index.html");

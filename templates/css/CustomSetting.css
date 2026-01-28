@@ -1,0 +1,380 @@
+/* ====== 上下按钮改进版 ====== */
+.UDAside #up,
+.UDAside #down {
+  position: fixed;
+  right: 20px;
+  z-index: 999; /* 保证在最上层 */
+  text-align: center;
+  width: 44px;
+  height: 44px;
+  line-height: 44px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 20px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+  backdrop-filter: blur(5px); /* 毛玻璃质感 */
+}
+/* 向上按钮 */
+.UDAside #up {
+  bottom: 90px;
+  background: linear-gradient(135deg, rgba(230, 165, 250, 0.6), rgba(180, 80, 255, 0.6));
+  color: white;
+}
+
+.UDAside #up:hover {
+  background: linear-gradient(135deg, rgb(160, 2, 252), rgb(110, 0, 190));
+  transform: translateY(-3px) scale(1.05); /* 悬停轻微弹起 */
+}
+/* 向下按钮 */
+.UDAside #down {
+  bottom: 25px;
+  background: linear-gradient(135deg, rgba(129, 192, 242, 0.6), rgba(45, 150, 233, 0.6));
+  color: white;
+}
+
+.UDAside #down:hover {
+  background: linear-gradient(135deg, rgb(45, 150, 233), rgb(0, 100, 180));
+  transform: translateY(3px) scale(1.05); /* 悬停轻微下移 */
+}
+/* 手机端适配 */
+@media only screen and (max-width: 900px) {
+  .UDAside #up,
+  .UDAside #down {
+    right: 15px;
+    width: 32px;
+    height: 32px;
+    line-height: 32px;
+    font-size: 14px;
+  }
+  .UDAside #up { bottom: 70px; }
+}
+
+
+/* .notion-aside-table-of-contents {
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  max-height: calc(100vh - 148px - 16px);
+
+  min-width: 222px;
+
+  overflow: auto;
+
+  background: var(--bg-color);
+
+  border-radius: 4px;
+
+} */
+/* 
+.notion-aside {
+  position: -webkit-sticky;
+  position: sticky;
+  top: 148px;
+  z-index: 101;
+  align-self: flex-start;
+  flex: 1 1;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+}
+
+
+/* === 左侧浮动 Table of Contents 样式（渐变 + 圆角卡片）=== */
+.TableOfContents {
+  position: fixed;
+  top: 100px;
+  left: 10px; /* 左侧位置 */
+  width: 260px;
+  background: linear-gradient(to bottom, #fffbe6, #ffffff); /* 柔和浅黄到白渐变 */
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  padding: 15px;
+  font-size: 0.9rem; /* 调大字体方便阅读 */
+  line-height: 1.8;
+  z-index: 1000;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+/* 目录标题 */
+.TableOfContents__Header {
+  text-align: center;
+  font-weight: bold;
+  margin-bottom: 12px;
+  font-size: 1rem;
+  color: #444;
+}
+.TableOfContents__Header::before,
+.TableOfContents__Header::after {
+  content: " ✦ ";
+  color: #d4a373; /* 点缀符号颜色，可改 */
+}
+
+/* 每个目录条目 */
+.TableOfContents__Item {
+  list-style: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.TableOfContents__Item:hover {
+  background: rgba(0,0,0,0.05);
+  border-radius: 6px;
+}
+.TableOfContents__Item > a {
+  color: inherit;
+  text-decoration: none;
+  display: block;
+  padding: 4px 2px;
+}
+
+/* 层级缩进 */
+.TableOfContents__Item[data-level="1"] { font-weight: bold; }
+.TableOfContents__Item[data-level="2"] { padding-left: 15px; font-size: 0.9em; }
+.TableOfContents__Item[data-level="3"] { padding-left: 30px; font-size: 0.85em; }
+
+/* 当前阅读位置高亮（左侧标记线） */
+.TableOfContents__Item.active > a {
+  color: #d4a373; /* 同渐变的暖色系 */
+  font-weight: bold;
+  border-left: 3px solid #d4a373;
+  padding-left: 5px;
+}
+
+/* 滚动条美化 */
+.TableOfContents::-webkit-scrollbar { width: 6px; }
+.TableOfContents::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 4px;
+}
+.TableOfContents::-webkit-scrollbar-thumb {
+  background: #d4a373;
+  border-radius: 4px;
+}
+.TableOfContents::-webkit-scrollbar-thumb:hover {
+  background: #b37d4e;
+}
+
+/* 移动端隐藏 */
+@media (max-width: 900px) {
+  .TableOfContents {
+    display: none;
+  }
+}
+
+
+/* ====== Index Article Card Style ====== */
+.Article {
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 12px;
+  padding: 16px 24px; /* Reduced padding from 24/32 */
+  margin-bottom: 1.2rem !important; /* Reduced margin from 2.0rem */
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.01);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle hover effect */
+.Article:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+}
+
+/* Fix title in card */
+.Article__Title {
+  padding-bottom: 0.35rem; /* Reduced from 0.5rem */
+  font-size: 1.15rem !important;
+  line-height: 1.3;
+}
+
+.Article__Title > a {
+  border-bottom: none !important;
+  color: #2c5282; /* Deep Blue, slightly softer */
+  transition: all 0.2s ease;
+  font-weight: 700;
+}
+
+.Article:hover .Article__Title > a {
+  color: #3182ce;
+  text-decoration: none;
+}
+
+.Article__Desc {
+  color: var(--secondary-text);
+  opacity: 0.75;
+  font-size: 0.88rem;
+  line-height: 1.5; /* Slightly tighter line height */
+  margin-bottom: 0.5rem;
+}
+
+.DateTagBar {
+  font-size: 0.75rem !important; /* Even smaller metadata */
+  opacity: 0.8;
+  margin-top: 0.25rem;
+}
+
+/* Sidebar/Nav adjustments for new look */
+.Navbar {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.utterances {
+  width: 85%;
+  max-width: 100%;
+  margin: 0px auto;
+  padding: 0px 96px;
+  height: 269px;
+}
+
+.utterances {
+  margin-top: 5rem;
+}
+
+.utterances-frame {
+  position: static;
+}
+
+/* ====== Rich Bookmark Cards ====== */
+.Bookmark {
+  padding: 14px 16px;
+  background: var(--hover-bg); 
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  margin: 12px 0;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.Bookmark:hover {
+  background: var(--border-color); /* 悬停时稍微加深 */
+  border-color: var(--secondary-text);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+}
+
+.Bookmark__Title {
+  font-weight: 700 !important; /* 加粗 */
+  font-size: 0.95rem;
+  color: var(--text-color);
+  margin-bottom: 6px;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.Bookmark__Desc {
+  font-size: 0.85rem;
+  color: var(--secondary-text);
+  line-height: 1.5;
+  margin-bottom: 10px;
+  max-height: 4.5em;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.Bookmark__Meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  border-top: 1px solid var(--border-color);
+  padding-top: 8px;
+}
+
+.Bookmark__Icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.Bookmark__Link {
+  font-size: 0.75rem;
+  color: var(--secondary-text);
+  opacity: 0.7;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0 !important;
+  text-decoration: none;
+}
+
+/* Ensure Columns don't squash bookmarks too much */
+.Column {
+  padding: 8px !important;
+  min-width: 300px !important;
+}
+
+@media (max-width: 900px) {
+  .Column {
+    min-width: 100% !important;
+    padding: 0 !important;
+  }
+}
+
+/* === Surgical Tag Styles === */
+.tag {
+    font-size: 0.85em;
+    padding: 4px 10px;
+    border-radius: 6px;
+    background: rgba(125, 125, 125, 0.1);
+    color: inherit;
+    font-weight: 500;
+    border: 1px solid rgba(125, 125, 125, 0.2);
+    transition: all 0.2s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 2px;
+}
+
+.tag:hover {
+    background: #2383e2;
+    color: #fff !important;
+    border-color: #2383e2;
+    text-decoration: none;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.tag-count {
+    font-size: 0.8em;
+    opacity: 0.6;
+    background: rgba(0,0,0,0.05);
+    padding: 0 4px;
+    border-radius: 4px;
+}
+
+.tag:hover .tag-count {
+    color: rgba(255,255,255,0.8);
+    background: rgba(255,255,255,0.2);
+}
+
+/* Tag Colors (Light Mode) - Ultra Soft Pastel Palette */
+.tag-gray { color: #5a5a5a; background: rgba(227, 226, 224, 0.2); border-color: rgba(0,0,0,0.02); }
+.tag-brown { color: #603b2c; background: rgba(238, 224, 218, 0.2); border-color: rgba(0,0,0,0.02); }
+.tag-orange { color: #854c1d; background: rgba(250, 222, 201, 0.2); border-color: rgba(0,0,0,0.02); }
+.tag-yellow { color: #89632a; background: rgba(253, 236, 200, 0.2); border-color: rgba(0,0,0,0.02); }
+.tag-green { color: #2b593f; background: rgba(219, 237, 219, 0.2); border-color: rgba(0,0,0,0.02); }
+.tag-blue { color: #28456c; background: rgba(211, 229, 239, 0.2); border-color: rgba(0,0,0,0.02); }
+.tag-purple { color: #5d307a; background: rgba(232, 222, 238, 0.2); border-color: rgba(0,0,0,0.02); }
+.tag-pink { color: #7d2d55; background: rgba(245, 224, 233, 0.2); border-color: rgba(0,0,0,0.02); }
+.tag-red { color: #a0302d; background: rgba(255, 226, 221, 0.2); border-color: rgba(0,0,0,0.02); }
+.tag-default { color: #5a5a5a; background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.02); }
+
+/* Remove Dark Mode tags for now to avoid 'forced' dark mode issues in light theme */

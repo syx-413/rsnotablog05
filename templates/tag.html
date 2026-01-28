@@ -29,7 +29,7 @@
       <h3 class="TagCloud__Title">All Tags</h3>
       <div class="TagCloud__List">
       {% for tag in allTags %}
-          <a href="{{ rootPath | default(value='.') }}/tag/{{ tag.slug }}.html" class="tag">
+          <a href="{{ rootPath | default(value='.') }}/tag/{{ tag.slug }}.html" class="tag tag-{{ tag.color | default(value='default') }}">
               {{ tag.name }} <span class="tag-count">{{ tag.count }}</span>
           </a>
       {% endfor %}
