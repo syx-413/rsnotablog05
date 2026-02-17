@@ -237,9 +237,7 @@ body { /* Body */
 
 /* Article */
 
-.Article { /* 文章 */
-  margin: 2rem 0; /* 将文章的外边距设置为2rem 0 */
-}
+
 
 .Article a { /* 文章的链接 */
   color: inherit;

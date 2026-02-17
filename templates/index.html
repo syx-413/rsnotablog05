@@ -12,9 +12,23 @@
 
 <body>
   {% include "partials/navbar.html" %}
-  <header class="Header">
-    <div class="Header__Spacer Header__Spacer--NoCover">
+  <header class="Header Header--Index">
+    {% if siteMeta.cover %}
+      <div class="Header__Cover">
+        <img src="{{ siteMeta.cover }}">
+      </div>
+    {% endif %}
+    <div class="Header__Spacer {% if not siteMeta.cover %}Header__Spacer--NoCover{% endif %}">
     </div>
+    {% if siteMeta.iconUrl %}
+      <div class="Header__Icon">
+        {% if siteMeta.iconUrl is starting_with("http") %}
+          <span><img class="inline-img-icon" src="{{ siteMeta.iconUrl }}"></span>
+        {% else %}
+          <span class="inline-img-icon">{{ siteMeta.iconUrl }}</span>
+        {% endif %}
+      </div>
+    {% endif %}
     <h1 class="Header__Title">
       {{ siteMeta.title }}
     </h1>

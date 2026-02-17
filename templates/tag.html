@@ -15,26 +15,28 @@
   <header class="Header">
     <div class="Header__Spacer Header__Spacer--NoCover">
     </div>
-    <h1 class="Header__Title">
-      # {{ tagName }}
-    </h1>
-    <div style="text-align: center; margin-top: 0.5rem; opacity: 0.7;">
-        Tag
+    <div style="text-align: center; margin-bottom: 0.5rem; opacity: 0.5; font-size: 0.8rem; letter-spacing: 2px; text-transform: uppercase;">
+        Category
     </div>
+    <h1 class="Header__Title" style="text-align: center;">
+      {{ tagName }}
+    </h1>
   </header>
   
-  {% include "partials/articleList.html" %}
+  <main style="max-width: 900px; margin: 0 auto; padding: 0 20px;">
+    {% include "partials/articleList.html" %}
 
-  <div class="TagCloud">
-      <h3 class="TagCloud__Title">All Tags</h3>
-      <div class="TagCloud__List">
-      {% for tag in allTags %}
-          <a href="{{ rootPath | default(value='.') }}/tag/{{ tag.slug }}.html" class="tag tag-{{ tag.color | default(value='default') }}">
-              {{ tag.name }} <span class="tag-count">{{ tag.count }}</span>
-          </a>
-      {% endfor %}
-      </div>
-  </div>
+    <div class="TagCloud">
+        <h3 class="TagCloud__Title">Exploration</h3>
+        <div class="TagCloud__List">
+        {% for tag in allTags %}
+            <a href="{{ rootPath | default(value='.') }}/tag/{{ tag.slug }}.html" class="tag tag-{{ tag.color | default(value='default') }}">
+                {{ tag.name }} <span class="tag-count">{{ tag.count }}</span>
+            </a>
+        {% endfor %}
+        </div>
+    </div>
+  </main>
 
   {% include "partials/footer.html" %}
 </body>

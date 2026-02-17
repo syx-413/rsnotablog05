@@ -1,35 +1,52 @@
-<article class="ArticleList">
+<div class="ArticleList">
   {% for page in pages %}
-  <article class="Article">
-    <h3 class="Article__Title">
+  <article class="ArticleItem">
+    <div class="ArticleItem__Meta">
+      {% if page.date %}
+      <span class="ArticleItem__Date">{{ page.date }}</span>
+      {% endif %}
+      {% if page.tags %}
+      <span class="ArticleItem__Separator">·</span>
+      <span class="ArticleItem__Tags">
+        {% for tag in page.tags %}
+          <a href="{{ rootPath | default(value='.') }}/tag/{{ tag.slug }}.html" class="ArticleItem__Tag">#{{ tag.name }}</a>
+        {% endfor %}
+      </span>
+      {% endif %}
+    </div>
+
+    <h2 class="ArticleItem__Title">
       {% if page.iconUrl %}
-        {% if page.iconUrl is starting_with("http") %}
-          <span><img class="inline-img-icon" src="{{ page.iconUrl }}"></span>
-        {% else %}
-          <span class="inline-img-icon">{{ page.iconUrl }}</span>
-        {% endif %}
+        <span class="ArticleItem__Icon">
+          {% if page.iconUrl is starting_with("http") %}
+            <img src="{{ page.iconUrl }}">
+          {% else %}
+            {{ page.iconUrl }}
+          {% endif %}
+        </span>
       {% endif %}
       <a href="{{ rootPath | default(value='.') }}/{{ page.url }}">
         {{ page.title }}
       </a>
-    </h3>
-    {% if page.preview %}
-    <p class="Article__Desc">
-      {{ page.preview }}
-    </p>
+    </h2>
+
+    {% if page.cover %}
+    <div class="ArticleItem__Cover">
+      <a href="{{ rootPath | default(value='.') }}/{{ page.url }}">
+        <img src="{{ page.cover }}" loading="lazy">
+      </a>
+    </div>
     {% endif %}
-    <div class="DateTagBar">
-      {% if page.date %}
-      <span class="DateTagBar__Item DateTagBar__Date">Posted on {{ page.date }}</span>
-      {% endif %}
-      {% for tag in page.tags %}
-      <span class="DateTagBar__Item DateTagBar__Tag">
-        <a href="{{ rootPath | default(value='.') }}/tag/{{ tag.slug }}.html" class="tag tag-{{ tag.color | default(value='default') }}">
-          {{ tag.name }}
-        </a>
-      </span>
-      {% endfor %}
+
+    {% if page.preview %}
+    <div class="ArticleItem__Excerpt">
+      {{ page.preview }}
+    </div>
+    {% endif %}
+
+    <div class="ArticleItem__ReadMore">
+      <a href="{{ rootPath | default(value='.') }}/{{ page.url }}">Continue reading</a>
     </div>
   </article>
   {% endfor %}
-</article>
+</div>
