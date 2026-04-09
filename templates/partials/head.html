@@ -5,6 +5,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <!-- Chrome, Firefox OS and Opera Status Bar Color -->
 <meta name="theme-color" content="#FFFFFF">
+<meta name="color-scheme" content="light dark">
 <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css">
 <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css">
 <link rel="stylesheet" type="text/css" href="{{ rootPath | default(value='.') }}/css/SourceSansPro.css">
@@ -20,3 +21,178 @@
     font-size: {{ fontSize | default(value=20) }}px;
   }
 </style>
+<script>
+  (function () {
+    var storageKey = "rsnotablog-theme";
+    var windowNamePrefix = "__rsnotablog_theme__:";
+    var darkQuery = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+
+    function getSystemTheme() {
+      return darkQuery && darkQuery.matches ? "dark" : "light";
+    }
+
+    function getWindowNameTheme() {
+      try {
+        if (typeof window.name !== "string") return null;
+        if (!window.name.startsWith(windowNamePrefix)) return null;
+        var value = window.name.slice(windowNamePrefix.length);
+        return value === "dark" || value === "light" ? value : null;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function setWindowNameTheme(theme) {
+      try {
+        window.name = windowNamePrefix + theme;
+      } catch (_) {}
+    }
+
+    function getStoredTheme() {
+      try {
+        var saved = localStorage.getItem(storageKey);
+        if (saved === "dark" || saved === "light") return saved;
+      } catch (_) {
+      }
+
+      return getWindowNameTheme();
+    }
+
+    function persistTheme(theme) {
+      setWindowNameTheme(theme);
+
+      try {
+        localStorage.setItem(storageKey, theme);
+      } catch (_) {}
+    }
+
+    function clearPersistedTheme() {
+      setWindowNameTheme(getSystemTheme());
+
+      try {
+        localStorage.removeItem(storageKey);
+      } catch (_) {}
+    }
+
+    function getThemeLabel(theme) {
+      return theme === "dark" ? "暗色" : "亮色";
+    }
+
+    function getThemeSymbol(theme) {
+      return theme === "dark" ? "夜间" : "日间";
+    }
+
+    function getOppositeTheme(theme) {
+      return theme === "dark" ? "light" : "dark";
+    }
+
+    function syncThemeLinks(theme) {
+      document.querySelectorAll("a[href]").forEach(function (link) {
+        var href = link.getAttribute("href");
+        if (!href || href.startsWith("http") || href.startsWith("#") || href.startsWith("mailto:") || href.startsWith("javascript:")) {
+          return;
+        }
+
+        try {
+          var url = new URL(href, window.location.href);
+          url.searchParams.set("theme", theme);
+          link.setAttribute("href", url.pathname + url.search + url.hash);
+        } catch (_) {}
+      });
+    }
+
+    function getResolvedTheme() {
+      try {
+        var urlTheme = new URL(window.location.href).searchParams.get("theme");
+        if (urlTheme === "dark" || urlTheme === "light") return urlTheme;
+      } catch (_) {}
+
+      return getStoredTheme() || getSystemTheme();
+    }
+
+    function getUtterancesTheme(theme) {
+      return theme === "dark" ? "github-dark" : "github-light";
+    }
+
+    function syncThemeControls(theme) {
+      var buttons = document.querySelectorAll("[data-theme-toggle]");
+      buttons.forEach(function (button) {
+        var icon = button.querySelector("[data-theme-icon]");
+        var label = button.querySelector("[data-theme-label]");
+        var currentThemeLabel = getThemeLabel(theme);
+        var nextThemeLabel = getThemeLabel(getOppositeTheme(theme));
+
+        button.setAttribute("aria-label", "当前主题：" + currentThemeLabel + "。点击切换到" + nextThemeLabel);
+        button.setAttribute("title", "当前主题：" + currentThemeLabel + "。点击切换到" + nextThemeLabel);
+        button.setAttribute("data-theme-current", theme);
+
+        if (icon) icon.textContent = getThemeSymbol(theme);
+        if (label) label.textContent = currentThemeLabel;
+      });
+    }
+
+    function syncUtterances(theme) {
+      var frame = document.querySelector(".utterances-frame");
+      if (!frame || !frame.contentWindow) return;
+
+      frame.contentWindow.postMessage(
+        { type: "set-theme", theme: getUtterancesTheme(theme) },
+        "https://utteranc.es"
+      );
+    }
+
+    function applyTheme(theme, shouldPersist) {
+      document.documentElement.dataset.theme = theme;
+      document.documentElement.style.colorScheme = theme;
+
+      var meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) {
+        meta.setAttribute("content", theme === "dark" ? "#101418" : "#fbfaf7");
+      }
+
+      if (shouldPersist) {
+        persistTheme(theme);
+      }
+
+      syncThemeControls(theme);
+      syncUtterances(theme);
+      syncThemeLinks(theme);
+      document.dispatchEvent(new CustomEvent("themechange", { detail: { theme: theme } }));
+    }
+
+    window.__applyTheme = applyTheme;
+    window.__toggleTheme = function () {
+      applyTheme(getResolvedTheme() === "dark" ? "light" : "dark", true);
+    };
+
+    applyTheme(getResolvedTheme(), false);
+
+    document.addEventListener("DOMContentLoaded", function () {
+      document.querySelectorAll("[data-theme-toggle]").forEach(function (button) {
+        button.addEventListener("click", function () {
+          window.__toggleTheme();
+        });
+      });
+
+      syncThemeControls(getResolvedTheme());
+
+      window.setTimeout(function () {
+        syncUtterances(getResolvedTheme());
+      }, 1200);
+    });
+
+    if (darkQuery) {
+      var handleSystemThemeChange = function () {
+        if (!getStoredTheme()) {
+          applyTheme(getSystemTheme(), false);
+        }
+      };
+
+      if (typeof darkQuery.addEventListener === "function") {
+        darkQuery.addEventListener("change", handleSystemThemeChange);
+      } else if (typeof darkQuery.addListener === "function") {
+        darkQuery.addListener(handleSystemThemeChange);
+      }
+    }
+  })();
+</script>

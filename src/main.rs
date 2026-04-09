@@ -118,6 +118,15 @@ fn extract_file_url(file: &File) -> Option<String> {
     }
 }
 
+fn extract_icon_url(icon: &EmojiAndIcon) -> Option<String> {
+    match icon {
+        EmojiAndIcon::Emoji(emoji) => Some(emoji.emoji.clone()),
+        EmojiAndIcon::File(file) => extract_file_url(file),
+        EmojiAndIcon::CustomEmoji(custom) => Some(custom.custom_emoji.url.clone()),
+        EmojiAndIcon::Icon(icon) => Some(icon.icon.name.clone()),
+    }
+}
+
 /// 获取正确的 ID - 如果输入的是数据库 ID，则自动转换为数据源 ID
 /// notionrs 库的 query_data_source 方法需要数据源 ID，而不是数据库 ID
 /// 此函数会自动检测并转换
@@ -133,12 +142,7 @@ async fn get_correct_id(client: &Client, database_id: &str) -> Result<(String, O
 
     match lib_res {
         Ok(response) => {
-            let icon_url = match &response.icon {
-                Some(Icon::Emoji(emoji)) => Some(emoji.emoji.clone()),
-                Some(Icon::File(file_enum)) => extract_file_url(file_enum),
-                Some(Icon::CustomEmoji(custom)) => Some(custom.custom_emoji.url.clone()),
-                None => None,
-            };
+            let icon_url = response.icon.as_ref().and_then(extract_icon_url);
             let cover = response.cover.as_ref().and_then(extract_file_url);
             let id = if !response.data_sources.is_empty() {
                 response.data_sources[0].id.trim().to_string()
@@ -415,6 +419,7 @@ async fn main() -> Result<()> {
         .context("未设置 DATABASE_ID 环境变量")?;
     let site_title = std::env::var("SITE_TITLE")
         .unwrap_or_else(|_| "My Blog".to_string());
+    let site_cover_override = std::env::var("SITE_COVER").ok();
 
     println!(">>> 配置信息:");
     println!("    Database ID: {}", database_id);
@@ -460,12 +465,7 @@ async fn main() -> Result<()> {
             .unwrap_or_else(|| "".to_string());
 
         // 提取页面图标 (Emoji 或 URL)
-        let icon_url = match &page.icon {
-            Some(Icon::Emoji(emoji)) => Some(emoji.emoji.clone()),
-            Some(Icon::File(file_enum)) => extract_file_url(file_enum),
-            Some(Icon::CustomEmoji(custom)) => Some(custom.custom_emoji.url.clone()),
-            None => None,
-        };
+        let icon_url = page.icon.as_ref().and_then(extract_icon_url);
 
         // 提取封面图片 URL
         let cover = page.cover.as_ref().and_then(extract_file_url);
@@ -500,7 +500,7 @@ async fn main() -> Result<()> {
     let site_meta = SiteMeta {
         title: site_title,
         icon_url: site_icon,
-        cover: site_cover,
+        cover: site_cover_override.or(site_cover),
         pages: all_posts.iter().map(|(_, m)| m.clone()).collect(),
     };
 
@@ -553,7 +553,11 @@ async fn main() -> Result<()> {
                     root_path: ".".to_string(),
                 };
 
-                let rendered = tera.render("post.html", &tera::Context::from_serialize(&context)?)?;
+                // 根据标题或标签选择模板
+                let is_note = meta.title == "Note" || meta.tags.iter().any(|t| t.name == "Note");
+                let template_name = if is_note { "note.html" } else { "post.html" };
+
+                let rendered = tera.render(template_name, &tera::Context::from_serialize(&context)?)?;
                 fs::write(format!("public/{}", meta.url), rendered)?;
 
                 Ok(Some(meta))

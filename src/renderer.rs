@@ -179,7 +179,10 @@ impl HtmlRenderer {
                 };
 
                 let thumb_html = if !thumb_url.is_empty() && thumb_url.starts_with("http") {
-                    format!("<div class=\"Bookmark__Thumbnail\"><img src=\"{}\" /></div>", thumb_url)
+                    format!(
+                        "<div class=\"Bookmark__Thumbnail\"><img src=\"{}\" alt=\"{} preview\" loading=\"lazy\" /></div>",
+                        thumb_url, title
+                    )
                 } else {
                     "".to_string()
                 };
@@ -187,20 +190,20 @@ impl HtmlRenderer {
                 let icon_url = format!("https://www.google.com/s2/favicons?domain={}&sz=64", host);
 
                 format!(
-                    "<div class=\"Bookmark\"><a href=\"{}\" target=\"_blank\">
+                    "<div class=\"Bookmark\"><a href=\"{}\" target=\"_blank\" rel=\"noopener noreferrer\">
                         <div class=\"Bookmark__Content\">
                             <div class=\"Bookmark__Info\">
                                 <div class=\"Bookmark__Title\">{}</div>
                                 {}
                                 <div class=\"Bookmark__Meta\">
-                                    <img class=\"Bookmark__Icon\" src=\"{}\" />
+                                    <img class=\"Bookmark__Icon\" src=\"{}\" alt=\"{} favicon\" />
                                     <span class=\"Bookmark__Link\">{}</span>
                                 </div>
                             </div>
                             {}
                         </div>
                     </a></div>",
-                    url, title, desc_html, icon_url, display_url, thumb_html
+                    url, title, desc_html, icon_url, host, display_url, thumb_html
                 )
             }
             Block::Toggle { toggle } => {
