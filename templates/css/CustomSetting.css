@@ -349,10 +349,11 @@ a {
 
 /* === 左侧浮动 Table of Contents 样式（渐变 + 圆角卡片）=== */
 .TableOfContents {
-  position: fixed;
-  top: 100px;
-  left: 10px; /* 左侧位置 */
-  width: 260px;
+    position: fixed;
+    top: 100px;
+    right: 10px;
+    left: auto;
+    width: 260px;
   background: linear-gradient(to bottom, #fffbe6, #ffffff); /* 柔和浅黄到白渐变 */
   border: 1px solid rgba(0,0,0,0.08);
   border-radius: 12px;
@@ -400,6 +401,7 @@ a {
 .TableOfContents__Item[data-level="1"] { font-weight: bold; }
 .TableOfContents__Item[data-level="2"] { padding-left: 15px; font-size: 0.9em; }
 .TableOfContents__Item[data-level="3"] { padding-left: 30px; font-size: 0.85em; }
+.TableOfContents__Item[data-level="4"] { padding-left: 45px; font-size: 0.82em; }
 
 /* 当前阅读位置高亮（左侧标记线） */
 .TableOfContents__Item.active > a {
@@ -1007,8 +1009,11 @@ a {
 }
 
 .TableOfContents {
-  background: var(--surface-elevated);
-  box-shadow: var(--shadow-soft);
+    background: color-mix(in srgb, var(--surface-elevated) 76%, transparent);
+    border: 1px solid color-mix(in srgb, var(--border-subtle) 72%, transparent);
+    box-shadow: 0 20px 48px rgba(15, 23, 42, 0.12);
+    backdrop-filter: blur(22px) saturate(165%);
+    -webkit-backdrop-filter: blur(22px) saturate(165%);
 }
 
 .TableOfContents__Item:hover {
@@ -1041,7 +1046,13 @@ html[data-theme="dark"] .Header__Cover > img {
 
 html[data-theme="dark"] .TableOfContents__Header::before,
 html[data-theme="dark"] .TableOfContents__Header::after {
-  color: var(--accent);
+    color: var(--accent);
+}
+
+html[data-theme="dark"] .TableOfContents {
+  background: color-mix(in srgb, #11161d 78%, transparent);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.34);
 }
 
 @media (max-width: 680px) {
@@ -1076,4 +1087,127 @@ html[data-theme="dark"] .TableOfContents__Header::after {
     .Header + main .ArticleList {
       grid-template-columns: 1fr;
     }
+}
+
+.Heading--4 {
+  font-size: 1.15rem;
+  line-height: 1.45;
+  margin: 1.2rem 0 0.55rem;
+  font-weight: 650;
+}
+
+.Heading {
+  scroll-margin-top: 90px;
+}
+
+.Paragraph--WithIcon {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+}
+
+.Paragraph__Icon {
+  flex: 0 0 auto;
+  width: 1.6rem;
+  min-height: 1.6rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  margin-top: 0.08rem;
+}
+
+.Paragraph__Text {
+  margin: 0;
+  flex: 1 1 auto;
+}
+
+.MarkdownExperiment {
+  margin: 1.5rem 0;
+}
+
+.MarkdownExperiment__Note {
+  margin: 0 0 1rem;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+}
+
+.MarkdownExperiment__Content {
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-x: auto;
+  padding: 1rem 1.1rem;
+  border-radius: 14px;
+  background: var(--surface-elevated);
+  border: 1px solid var(--border-subtle);
+  line-height: 1.7;
+}
+
+/* Final TOC glass override */
+.TableOfContents {
+  width: 244px;
+  padding: 12px 12px 11px;
+  font-size: 0.76rem !important;
+  line-height: 1.5;
+  background: transparent !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 16px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  -webkit-backdrop-filter: blur(48px) saturate(210%) !important;
+  backdrop-filter: blur(48px) saturate(210%) !important;
+}
+
+.TableOfContents__Header {
+  margin-bottom: 10px;
+  font-size: 0.7rem !important;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.78;
+  font-family: "LXGW Neo ZhiSong", "LXGWNeoZhiSong", serif;
+}
+
+.TableOfContents__Item {
+  border-radius: 10px;
+}
+
+.TableOfContents__Item > a {
+  padding: 5px 8px;
+  font-size: 0.76rem !important;
+  line-height: 1.38;
+  font-family: "LXGW Neo ZhiSong", "LXGWNeoZhiSong", serif;
+}
+
+.TableOfContents__Item[data-level="1"] > a {
+  font-weight: 650;
+}
+
+.TableOfContents__Item[data-level="2"] > a {
+  padding-left: 20px;
+  font-size: 0.73rem !important;
+}
+
+.TableOfContents__Item[data-level="3"] > a {
+  padding-left: 32px;
+  font-size: 0.7rem !important;
+}
+
+.TableOfContents__Item[data-level="4"] > a {
+  padding-left: 44px;
+  font-size: 0.68rem !important;
+}
+
+.TableOfContents__Item:hover {
+  background: color-mix(in srgb, var(--surface-hover) 58%, transparent) !important;
+}
+
+.TableOfContents__Item.active > a {
+  border-left: 2px solid var(--accent);
+  padding-left: 10px;
+}
+
+html[data-theme="dark"] .TableOfContents {
+  background: transparent !important;
+  border-color: rgba(255, 255, 255, 0.05) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }

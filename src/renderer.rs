@@ -2,63 +2,90 @@ use notionrs_types::prelude::*;
 
 pub struct HtmlRenderer;
 
+#[derive(Debug, Clone)]
+pub struct TocEntry {
+    pub level: u8,
+    pub text: String,
+    pub anchor_id: String,
+}
+
 impl HtmlRenderer {
     pub fn render_block(block: &Block, block_id: &str) -> String {
         match block {
             Block::Paragraph { paragraph } => {
                 let text = Self::render_rich_text(&paragraph.rich_text);
                 let color_part = Self::get_color_part(&paragraph.color);
-                let color_class = if color_part.is_empty() { String::new() } else { format!("ColorfulBlock--{}", color_part) };
-                format!("<p class=\"Paragraph {}\">{}</p>", color_class, text)
+                let color_class = if color_part.is_empty() {
+                    String::new()
+                } else {
+                    format!("ColorfulBlock--{}", color_part)
+                };
+                if let Some(icon) = &paragraph.icon {
+                    let icon_html = Self::render_emoji_and_icon(icon);
+                    format!(
+                        "<div class=\"Paragraph Paragraph--WithIcon {}\"><div class=\"Paragraph__Icon\">{}</div><p class=\"Paragraph__Text\">{}</p></div>",
+                        color_class, icon_html, text
+                    )
+                } else {
+                    format!("<p class=\"Paragraph {}\">{}</p>", color_class, text)
+                }
             }
             Block::Heading1 { heading_1 } => {
                 let text = Self::render_rich_text(&heading_1.rich_text);
                 let color_part = Self::get_color_part(&heading_1.color);
-                let color_class = if color_part.is_empty() { String::new() } else { format!("ColorfulBlock--{}", color_part) };
-                format!(
-                    "<h1 class=\"Heading Heading--1 {}\">{}</h1>",
-                    color_class, text
-                )
+                Self::render_heading(1, &text, &color_part, block_id)
             }
             Block::Heading2 { heading_2 } => {
                 let text = Self::render_rich_text(&heading_2.rich_text);
                 let color_part = Self::get_color_part(&heading_2.color);
-                let color_class = if color_part.is_empty() { String::new() } else { format!("ColorfulBlock--{}", color_part) };
-                format!(
-                    "<h2 class=\"Heading Heading--2 {}\">{}</h2>",
-                    color_class, text
-                )
+                Self::render_heading(2, &text, &color_part, block_id)
             }
             Block::Heading3 { heading_3 } => {
                 let text = Self::render_rich_text(&heading_3.rich_text);
                 let color_part = Self::get_color_part(&heading_3.color);
-                let color_class = if color_part.is_empty() { String::new() } else { format!("ColorfulBlock--{}", color_part) };
-                format!(
-                    "<h3 class=\"Heading Heading--3 {}\">{}</h3>",
-                    color_class, text
-                )
+                Self::render_heading(3, &text, &color_part, block_id)
+            }
+            Block::Heading4 { heading_4 } => {
+                let text = Self::render_rich_text(&heading_4.rich_text);
+                let color_part = Self::get_color_part(&heading_4.color);
+                Self::render_heading(4, &text, &color_part, block_id)
             }
             Block::BulletedListItem { bulleted_list_item } => {
                 let text = Self::render_rich_text(&bulleted_list_item.rich_text);
                 let color_part = Self::get_color_part(&bulleted_list_item.color);
-                let color_class = if color_part.is_empty() { String::new() } else { format!("ColorfulBlock--{}", color_part) };
+                let color_class = if color_part.is_empty() {
+                    String::new()
+                } else {
+                    format!("ColorfulBlock--{}", color_part)
+                };
                 format!("<li class=\"BulletedList {}\">{}</li>", color_class, text)
             }
             Block::NumberedListItem { numbered_list_item } => {
                 let text = Self::render_rich_text(&numbered_list_item.rich_text);
                 let color_part = Self::get_color_part(&numbered_list_item.color);
-                let color_class = if color_part.is_empty() { String::new() } else { format!("ColorfulBlock--{}", color_part) };
+                let color_class = if color_part.is_empty() {
+                    String::new()
+                } else {
+                    format!("ColorfulBlock--{}", color_part)
+                };
                 format!("<li class=\"NumberedList {}\">{}</li>", color_class, text)
             }
             Block::Code { code } => {
                 let language = format!("{:?}", code.language).to_lowercase();
                 let text = Self::render_rich_text(&code.rich_text);
-                format!("<pre class=\"Code\"><code class=\"language-{}\">{}</code></pre>", language, text)
+                format!(
+                    "<pre class=\"Code\"><code class=\"language-{}\">{}</code></pre>",
+                    language, text
+                )
             }
             Block::Quote { quote } => {
                 let text = Self::render_rich_text(&quote.rich_text);
                 let color_part = Self::get_color_part(&quote.color);
-                let color_class = if color_part.is_empty() { String::new() } else { format!("ColorfulBlock--{}", color_part) };
+                let color_class = if color_part.is_empty() {
+                    String::new()
+                } else {
+                    format!("ColorfulBlock--{}", color_part)
+                };
                 format!(
                     "<blockquote class=\"Quote {}\">{}</blockquote>",
                     color_class, text
@@ -71,7 +98,11 @@ impl HtmlRenderer {
                     None => "💡".to_string(),
                 };
                 let color_part = Self::get_color_part(&callout.color);
-                let color_class = if color_part.is_empty() { String::new() } else { format!("ColorfulBlock--{}", color_part) };
+                let color_class = if color_part.is_empty() {
+                    String::new()
+                } else {
+                    format!("ColorfulBlock--{}", color_part)
+                };
                 format!(
                     "<div class=\"Callout {}\"><div class=\"Callout__Icon\">{}</div><div class=\"Callout__Content\">{}</div></div>",
                     color_class, emoji, text
@@ -90,10 +121,12 @@ impl HtmlRenderer {
                 } else {
                     format!("<figcaption>{}</figcaption>", caption_str)
                 };
-                
+
                 format!(
                     "<div class=\"Image Image--Normal\"><figure><img src=\"{}\" alt=\"{}\" loading=\"lazy\" />{}</figure></div>",
-                    url, caption_str.replace("\"", "&quot;"), caption_html
+                    url,
+                    caption_str.replace("\"", "&quot;"),
+                    caption_html
                 )
             }
             Block::Video { video } => {
@@ -153,19 +186,28 @@ impl HtmlRenderer {
             Block::Bookmark { bookmark } => {
                 let url = bookmark.url.clone();
                 let caption = Self::render_rich_text(&bookmark.caption);
-                
+
                 // 支持 "标题 | 描述 | 缩略图URL" 的格式
                 let (mut title, desc, thumb_url) = {
                     let parts: Vec<&str> = caption.split('|').map(|s| s.trim()).collect();
                     match parts.len() {
-                        len if len >= 3 => (parts[0].to_string(), parts[1].to_string(), parts[2].to_string()),
+                        len if len >= 3 => (
+                            parts[0].to_string(),
+                            parts[1].to_string(),
+                            parts[2].to_string(),
+                        ),
                         2 => (parts[0].to_string(), parts[1].to_string(), String::new()),
-                        1 if !parts[0].is_empty() => (parts[0].to_string(), String::new(), String::new()),
+                        1 if !parts[0].is_empty() => {
+                            (parts[0].to_string(), String::new(), String::new())
+                        }
                         _ => (url.clone(), String::new(), String::new()),
                     }
                 };
 
-                let display_url = url.trim_start_matches("https://").trim_start_matches("http://").trim_end_matches("/");
+                let display_url = url
+                    .trim_start_matches("https://")
+                    .trim_start_matches("http://")
+                    .trim_end_matches("/");
                 let host = display_url.split('/').next().unwrap_or(display_url);
 
                 if title.is_empty() {
@@ -236,10 +278,14 @@ impl HtmlRenderer {
             Block::Column { column } => {
                 let ratio = column.width_ratio;
                 let flex_basis = ratio * 100.0;
-                format!("<div class=\"Column\" style=\"flex: {}; width: {}%; min-width: 0;\">", ratio, flex_basis)
+                format!(
+                    "<div class=\"Column\" style=\"flex: {}; width: {}%; min-width: 0;\">",
+                    ratio, flex_basis
+                )
             }
             Block::Table { .. } => {
-                "<div class=\"Table\"><table class=\"Table__Simple\" style=\"width: 100%\">".to_string()
+                "<div class=\"Table\"><table class=\"Table__Simple\" style=\"width: 100%\">"
+                    .to_string()
             }
             Block::TableRow { table_row } => {
                 let mut row_html = String::from("<tr>");
@@ -255,27 +301,24 @@ impl HtmlRenderer {
                 let id_simple = block_id.replace("-", "");
                 format!(
                     "<a class=\"Page\" href=\"https://notion.so/{}\" target=\"_blank\"><div><div class=\"Page__Icon\">📄</div><div class=\"Page__Title\"><span class=\"SemanticString\">{}</span></div></div></a>",
-                    id_simple, 
-                    child_page.title
+                    id_simple, child_page.title
                 )
             }
             Block::ChildDatabase { child_database } => {
                 // 这里我们不再仅仅显示一个链接，而是预留一个类名，由 main.rs 完成内容填充
                 format!(
                     "<div class=\"Database\"><h3 class=\"Database__Title\">{}</h3><div class=\"Database__TablePlaceholder\" data-db-id=\"{}\"></div></div>",
-                    child_database.title,
-                    block_id
+                    child_database.title, block_id
                 )
             }
-            Block::TableOfContents { .. } => {
-                "<div class=\"TableOfContents\"></div>".to_string()
-            }
-            Block::Breadcrumb { .. } => {
-                "<div class=\"Breadcrumb\"></div>".to_string()
-            }
+            Block::TableOfContents { .. } => "<div class=\"TableOfContents\"></div>".to_string(),
+            Block::Breadcrumb { .. } => "<div class=\"Breadcrumb\"></div>".to_string(),
             Block::LinkPreview { link_preview } => {
                 let url = link_preview.url.clone();
-                format!("<div class=\"LinkPreview\"><a href=\"{}\" target=\"_blank\">{}</a></div>", url, url)
+                format!(
+                    "<div class=\"LinkPreview\"><a href=\"{}\" target=\"_blank\">{}</a></div>",
+                    url, url
+                )
             }
             /*
             Block::LinkToPage { link_to_page } => {
@@ -351,6 +394,44 @@ impl HtmlRenderer {
         html
     }
 
+    fn render_emoji_and_icon(icon: &EmojiAndIcon) -> String {
+        match icon {
+            EmojiAndIcon::Emoji(emoji) => {
+                format!(
+                    "<span class=\"inline-img-icon\">{}</span>",
+                    Self::escape_html(&emoji.emoji)
+                )
+            }
+            EmojiAndIcon::CustomEmoji(custom) => {
+                format!(
+                    "<img class=\"inline-img-icon\" src=\"{}\" alt=\"{}\" loading=\"lazy\" />",
+                    Self::escape_html(&custom.custom_emoji.url),
+                    Self::escape_html(&custom.custom_emoji.name)
+                )
+            }
+            EmojiAndIcon::File(File::External(ext)) => {
+                format!(
+                    "<img class=\"inline-img-icon\" src=\"{}\" alt=\"paragraph icon\" loading=\"lazy\" />",
+                    Self::escape_html(&ext.external.url)
+                )
+            }
+            EmojiAndIcon::File(File::NotionHosted(file)) => {
+                format!(
+                    "<img class=\"inline-img-icon\" src=\"{}\" alt=\"paragraph icon\" loading=\"lazy\" />",
+                    Self::escape_html(&file.file.url)
+                )
+            }
+            EmojiAndIcon::File(_) => "<span class=\"inline-img-icon\">⬚</span>".to_string(),
+            EmojiAndIcon::Icon(icon) => {
+                let label = Self::escape_html(&icon.icon.name);
+                format!(
+                    "<span class=\"inline-img-icon\" title=\"{}\">{}</span>",
+                    label, label
+                )
+            }
+        }
+    }
+
     fn get_color_part(color: &Color) -> String {
         let mut color_str = format!("{:?}", color);
 
@@ -379,8 +460,10 @@ impl HtmlRenderer {
     }
 
     pub fn render_database_table(database_json: &serde_json::Value) -> String {
-        let mut html = String::from("<div class=\"Table\"><table class=\"Table__Simple\" style=\"width: 100%\">");
-        
+        let mut html = String::from(
+            "<div class=\"Table\"><table class=\"Table__Simple\" style=\"width: 100%\">",
+        );
+
         if let Some(results) = database_json.get("results").and_then(|r| r.as_array()) {
             if results.is_empty() {
                 return "<p class=\"Paragraph\">No entries found.</p>".to_string();
@@ -399,7 +482,10 @@ impl HtmlRenderer {
             // 渲染表头
             html.push_str("<thead><tr>");
             for header in &headers {
-                html.push_str(&format!("<th class=\"Table__Cell\" style=\"font-weight: bold;\">{}</th>", header));
+                html.push_str(&format!(
+                    "<th class=\"Table__Cell\" style=\"font-weight: bold;\">{}</th>",
+                    header
+                ));
             }
             html.push_str("</tr></thead><tbody>");
 
@@ -413,41 +499,70 @@ impl HtmlRenderer {
                             let prop_type = prop.get("type").and_then(|t| t.as_str()).unwrap_or("");
                             match prop_type {
                                 "title" | "rich_text" => {
-                                    if let Some(texts) = prop.get(prop_type).and_then(|t| t.as_array()) {
+                                    if let Some(texts) =
+                                        prop.get(prop_type).and_then(|t| t.as_array())
+                                    {
                                         for rt_json in texts {
-                                            if let Some(plain_text) = rt_json.get("plain_text").and_then(|pt| pt.as_str()) {
+                                            if let Some(plain_text) =
+                                                rt_json.get("plain_text").and_then(|pt| pt.as_str())
+                                            {
                                                 html.push_str(&Self::escape_html(plain_text));
                                             }
                                         }
                                     }
-                                },
+                                }
                                 "multi_select" => {
-                                    if let Some(options) = prop.get("multi_select").and_then(|o| o.as_array()) {
+                                    if let Some(options) =
+                                        prop.get("multi_select").and_then(|o| o.as_array())
+                                    {
                                         for opt in options {
-                                            if let Some(name) = opt.get("name").and_then(|n| n.as_str()) {
-                                                let color = opt.get("color").and_then(|c| c.as_str()).unwrap_or("gray");
-                                                html.push_str(&format!("<span class=\"tag tag-{}\">{}</span> ", color, name));
+                                            if let Some(name) =
+                                                opt.get("name").and_then(|n| n.as_str())
+                                            {
+                                                let color = opt
+                                                    .get("color")
+                                                    .and_then(|c| c.as_str())
+                                                    .unwrap_or("gray");
+                                                html.push_str(&format!(
+                                                    "<span class=\"tag tag-{}\">{}</span> ",
+                                                    color, name
+                                                ));
                                             }
                                         }
                                     }
-                                },
+                                }
                                 "select" => {
-                                    if let Some(opt) = prop.get("select").and_then(|o| o.as_object()) {
-                                        if let Some(name) = opt.get("name").and_then(|n| n.as_str()) {
-                                            let color = opt.get("color").and_then(|c| c.as_str()).unwrap_or("gray");
-                                            html.push_str(&format!("<span class=\"tag tag-{}\">{}</span>", color, name));
+                                    if let Some(opt) =
+                                        prop.get("select").and_then(|o| o.as_object())
+                                    {
+                                        if let Some(name) = opt.get("name").and_then(|n| n.as_str())
+                                        {
+                                            let color = opt
+                                                .get("color")
+                                                .and_then(|c| c.as_str())
+                                                .unwrap_or("gray");
+                                            html.push_str(&format!(
+                                                "<span class=\"tag tag-{}\">{}</span>",
+                                                color, name
+                                            ));
                                         }
                                     }
-                                },
+                                }
                                 "checkbox" => {
-                                    let checked = prop.get("checkbox").and_then(|c| c.as_bool()).unwrap_or(false);
+                                    let checked = prop
+                                        .get("checkbox")
+                                        .and_then(|c| c.as_bool())
+                                        .unwrap_or(false);
                                     html.push_str(if checked { "☑️" } else { "☐" });
-                                },
+                                }
                                 "url" => {
                                     if let Some(url) = prop.get("url").and_then(|u| u.as_str()) {
-                                        html.push_str(&format!("<a href=\"{}\" target=\"_blank\">{}</a>", url, url));
+                                        html.push_str(&format!(
+                                            "<a href=\"{}\" target=\"_blank\">{}</a>",
+                                            url, url
+                                        ));
                                     }
-                                },
+                                }
                                 _ => {
                                     // 其他类型简单显示其字段名
                                     html.push_str(&format!("[{}]", prop_type));
@@ -461,8 +576,43 @@ impl HtmlRenderer {
             }
             html.push_str("</tbody>");
         }
-        
+
         html.push_str("</table></div>");
+        html
+    }
+
+    fn render_heading(level: u8, text: &str, color_part: &str, block_id: &str) -> String {
+        let color_class = if color_part.is_empty() {
+            String::new()
+        } else {
+            format!("ColorfulBlock--{}", color_part)
+        };
+        let anchor_id = Self::heading_anchor_id(block_id);
+        format!(
+            "<h{level} id=\"{anchor_id}\" class=\"Heading Heading--{level} {color_class}\"><a class=\"Anchor\" href=\"#{anchor_id}\" aria-label=\"Anchor\">#</a><span class=\"SemanticString\">{text}</span></h{level}>"
+        )
+    }
+
+    pub fn heading_anchor_id(block_id: &str) -> String {
+        format!("heading-{}", block_id.replace('-', ""))
+    }
+
+    pub fn render_table_of_contents(entries: &[TocEntry]) -> String {
+        if entries.is_empty() {
+            return String::new();
+        }
+
+        let mut html =
+            String::from("<aside class=\"TableOfContents\"><div class=\"TableOfContents__Header\">Contents</div>");
+        for entry in entries {
+            html.push_str(&format!(
+                "<div class=\"TableOfContents__Item\" data-level=\"{}\"><a href=\"#{}\">{}</a></div>",
+                entry.level,
+                Self::escape_html(&entry.anchor_id),
+                Self::escape_html(&entry.text)
+            ));
+        }
+        html.push_str("</aside>");
         html
     }
 

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  {% include "partials/head.html" %}
+  <title>
+    {{ siteMeta.title }}
+  </title>
+  <meta property="og:type" content="blog">
+  <meta property="og:title" content="{{ siteMeta.title }}">
+</head>
+
+<body>
+  {% include "partials/navbar.html" %}
+  <header class="Header">
+    <div class="Header__Spacer Header__Spacer--NoCover">
+    </div>
+    <div style="text-align: center; margin-bottom: 0.5rem; opacity: 0.5; font-size: 0.8rem; letter-spacing: 2px; text-transform: uppercase;">
+      View
+    </div>
+    <h1 class="Header__Title" style="text-align: center;">
+      {{ viewName }}
+    </h1>
+    <div style="text-align: center; margin-top: 0.5rem; color: var(--text-muted); font-size: 0.92rem;">
+      {{ viewType }}
+    </div>
+  </header>
+
+  <main style="max-width: 1100px; margin: 0 auto; padding: 0 20px;">
+    {% include "partials/articleList.html" %}
+
+    <div class="TagCloud">
+      <h3 class="TagCloud__Title">Exploration</h3>
+      <div class="TagCloud__List">
+      {% for tag in allTags %}
+        <a href="{{ rootPath | default(value='.') }}/tag/{{ tag.slug }}.html" class="tag tag-{{ tag.color | default(value='default') }}">
+          {{ tag.name }} <span class="tag-count">{{ tag.count }}</span>
+        </a>
+      {% endfor %}
+      </div>
+    </div>
+  </main>
+
+  {% include "partials/footer.html" %}
+</body>
+
+</html>
