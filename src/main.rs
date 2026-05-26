@@ -112,6 +112,28 @@ fn slugify(s: &str) -> String {
         .to_lowercase()
 }
 
+fn post_url_for(title: &str, tags: &[Tag]) -> String {
+    let category_slug = tags
+        .first()
+        .map(|tag| tag.slug.as_str())
+        .filter(|slug| !slug.is_empty())
+        .unwrap_or("uncategorized");
+
+    format!("tag/{}/{}.html", category_slug, slugify(title))
+}
+
+fn root_path_for_url(url: &str) -> String {
+    let depth = url.matches('/').count();
+    if depth == 0 {
+        ".".to_string()
+    } else {
+        std::iter::repeat("..")
+            .take(depth)
+            .collect::<Vec<_>>()
+            .join("/")
+    }
+}
+
 fn extract_file_url(file: &File) -> Option<String> {
     match file {
         File::External(ext) => Some(ext.external.url.clone()),
@@ -187,8 +209,9 @@ async fn query_child_database_json(
 
     let query_response = client
         .query_data_source()
+        .typed::<GenericPageProperties>()
         .data_source_id(&data_source_response.id)
-        .send::<GenericPageProperties>()
+        .send()
         .await
         .map_err(|e| anyhow::anyhow!(e))?;
 
@@ -653,9 +676,10 @@ async fn main() -> Result<()> {
     let filter = Filter::timestamp_is_not_empty();
     let response = client
         .query_data_source()
+        .typed::<MyProperties>()
         .data_source_id(&data_source_id)
         .filter(filter)
-        .send::<MyProperties>()
+        .send()
         .await
         .map_err(|e| anyhow::anyhow!(e))?;
 
@@ -669,7 +693,6 @@ async fn main() -> Result<()> {
         }
 
         let title = p.title.to_string();
-        let filename = format!("{}.html", slugify(&title));
 
         let date_str = p
             .date
@@ -685,33 +708,36 @@ async fn main() -> Result<()> {
         // 提取封面图片 URL
         let cover = page.cover.as_ref().and_then(extract_file_url);
 
+        let tags: Vec<Tag> = p
+            .tags
+            .multi_select
+            .iter()
+            .map(|opt| {
+                let mut color = format!("{:?}", opt.color).to_lowercase();
+                if color.starts_with("some(") {
+                    color = color
+                        .strip_prefix("some(")
+                        .unwrap()
+                        .strip_suffix(")")
+                        .unwrap()
+                        .to_string();
+                }
+                Tag {
+                    name: opt.name.clone(),
+                    color,
+                    slug: slugify(&opt.name),
+                }
+            })
+            .collect();
+        let url = post_url_for(&title, &tags);
+
         all_posts.push((
             page.id.to_string(),
             PostMetadata {
                 title,
-                url: filename,
+                url,
                 date: date_str,
-                tags: p
-                    .tags
-                    .multi_select
-                    .iter()
-                    .map(|opt| {
-                        let mut color = format!("{:?}", opt.color).to_lowercase();
-                        if color.starts_with("some(") {
-                            color = color
-                                .strip_prefix("some(")
-                                .unwrap()
-                                .strip_suffix(")")
-                                .unwrap()
-                                .to_string();
-                        }
-                        Tag {
-                            name: opt.name.clone(),
-                            color,
-                            slug: slugify(&opt.name),
-                        }
-                    })
-                    .collect(),
+                tags,
                 preview: "".to_string(), // 稍后填充
                 publish: p.publish.checkbox,
                 in_menu: p.in_menu.checkbox,
@@ -778,7 +804,7 @@ async fn main() -> Result<()> {
                 let context = PageContext {
                     site_meta,
                     post: post_context,
-                    root_path: ".".to_string(),
+                    root_path: root_path_for_url(&meta.url),
                 };
 
                 // 根据标题或标签选择模板
@@ -787,7 +813,11 @@ async fn main() -> Result<()> {
 
                 let rendered =
                     tera.render(template_name, &tera::Context::from_serialize(&context)?)?;
-                fs::write(format!("public/{}", meta.url), rendered)?;
+                let output_path = Path::new("public").join(&meta.url);
+                if let Some(parent) = output_path.parent() {
+                    fs::create_dir_all(parent)?;
+                }
+                fs::write(output_path, rendered)?;
 
                 Ok(Some((page_id, meta)))
             }

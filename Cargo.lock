@@ -966,9 +966,9 @@ dependencies = [
 
 [[package]]
 name = "notionrs"
-version = "0.19.0"
+version = "0.27.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "08b50dbba98a4f1a53e4c9a8efdbe06c78df7cffcb7d9f8d78fe4b2d51a9e1a3"
+checksum = "3cbd0b122b9d040ec173ddf928629b6aefe86f533afdb6c9433e09a61f6de9c2"
 dependencies = [
  "bytes",
  "futures",
@@ -985,9 +985,9 @@ dependencies = [
 
 [[package]]
 name = "notionrs_macro"
-version = "0.2.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b72a1968989b4e925e7e56e462301e73daa2e22cb5099a2cb9dc3bbbf670dc8e"
+checksum = "d96d62a2642cfdeb780b486040531719885628267aaad51338f36dd7dc423048"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -996,9 +996,9 @@ dependencies = [
 
 [[package]]
 name = "notionrs_types"
-version = "0.15.0"
+version = "0.20.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9e914ac6ad525f0969ee0ab716ef9028577139747a40b492e2f80e4ed49775da"
+checksum = "78c9580885282ddbc6296d29dd9d741d47a15c8e896db385d01461cf385f1190"
 dependencies = [
  "notionrs_macro",
  "serde",
@@ -1191,9 +1191,9 @@ dependencies = [
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.103"
+version = "1.0.106"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5ee95bc4ef87b8d5ba32e8b7714ccc834865276eab0aed5c9958d00ec45f49e8"
+checksum = "8fd00f0bb2e90d81d1044c2b32617f68fcb9fa3bb7640c23e9c748e53fb30934"
 dependencies = [
  "unicode-ident",
 ]
@@ -1256,9 +1256,9 @@ dependencies = [
 
 [[package]]
 name = "quote"
-version = "1.0.42"
+version = "1.0.45"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a338cc41d27e6cc6dce6cefc13a0729dfbb81c262b1f519331575dd80ef3067f"
+checksum = "41f2619966050689382d2b44f664f4bc593e129785a36d6ee376ddf37259b924"
 dependencies = [
  "proc-macro2",
 ]
@@ -1722,9 +1722,9 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 
 [[package]]
 name = "syn"
-version = "2.0.111"
+version = "2.0.117"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "390cc9a294ab71bdb1aa2e99d13be9c753cd2d7bd6560c77118597410c4d2e87"
+checksum = "e665b8803e7b1d2a727f4023456bbbbe74da67099c585258af0ad9c5013b9b99"
 dependencies = [
  "proc-macro2",
  "quote",

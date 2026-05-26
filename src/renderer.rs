@@ -602,8 +602,9 @@ impl HtmlRenderer {
             return String::new();
         }
 
-        let mut html =
-            String::from("<aside class=\"TableOfContents\"><div class=\"TableOfContents__Header\">Contents</div>");
+        let mut html = String::from(
+            "<aside class=\"TableOfContents\"><div class=\"TableOfContents__Header\">Contents</div>",
+        );
         for entry in entries {
             html.push_str(&format!(
                 "<div class=\"TableOfContents__Item\" data-level=\"{}\"><a href=\"#{}\">{}</a></div>",
